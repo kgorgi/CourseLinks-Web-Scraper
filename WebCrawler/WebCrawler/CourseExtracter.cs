@@ -14,43 +14,46 @@ namespace WebCrawler
         const string slash = "/";
         const string urlEnd = ".html";
 
-        private string errorMsgStart;
+        private string _fieldOfStudy;
+        private string _courseNum;
+
+        private HtmlDocument content;
+
         public CourseExtracter(string fieldOfStudy, string courseNum)
         {
-            this.errorMsgStart = fieldOfStudy + " " + courseNum + ": ";
+            this._fieldOfStudy = fieldOfStudy;
+            this._courseNum = courseNum;
 
+            // Get Webpage
             HtmlWeb web = new HtmlWeb();
             string requestUrl = rootUrl + fieldOfStudy + slash + courseNum + urlEnd;
-            var htmlDoc = web.Load(requestUrl);
+            this.content = web.Load(requestUrl);
 
-            string prereqFilter = "//ul[@class='prereq']";
-            string prereqsHTML = "";
-            try
-            {
-               prereqsHTML = htmlDoc.DocumentNode.SelectNodes(prereqFilter).First().InnerHtml;
-            } catch (ArgumentNullException)
-            {
-                this.LogError("No Pre-requisites");
-            }
-
-            string precoreqsFilter = "//ul[@class='precoreq']";
-            string precoreqsHTML = "";
-            try
-            {
-                precoreqsHTML = htmlDoc.DocumentNode.SelectNodes(precoreqsFilter).First().InnerHtml;
-            }
-            catch (ArgumentNullException )
-            {
-                this.LogError("No Pre/Co-Requisites");
-            }
-
-            Console.WriteLine(prereqsHTML);
+            GetCourses(true);
+            GetCourses(false);
             Console.ReadLine();
         }
 
         private void LogError(string error)
         {
-            Console.Error.WriteLine(this.errorMsgStart + error);
+            string errorMsgStart = this._fieldOfStudy + " " +  this._courseNum + ": ";
+            Console.Error.WriteLine(errorMsgStart + error);
+        }
+
+        private void GetCourses(bool onlyPrereqs)
+        {
+            string filter = onlyPrereqs ? "//ul[@class='prereq']" : "//ul[@class='precoreq']";
+            string reqsHTML = "";
+            try
+            {
+                reqsHTML = this.content.DocumentNode.SelectNodes(filter).First().InnerHtml;
+            }
+            catch (ArgumentNullException)
+            {
+                string msg = onlyPrereqs ? "No Pre-requisites" : "No Pre/Co-Requisites";
+                this.LogError(msg);
+            }
+            Console.WriteLine(reqsHTML);
         }
     }
 }
