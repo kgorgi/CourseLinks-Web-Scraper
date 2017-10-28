@@ -42,18 +42,24 @@ namespace WebCrawler
 
         private void GetCourses(bool onlyPrereqs)
         {
-            string filter = onlyPrereqs ? "//ul[@class='prereq']" : "//ul[@class='precoreq']";
-            string reqsHTML = "";
+            string filterClass = onlyPrereqs ? "prereq" : "precoreq";
+            string filter = "//ul[@class='" + filterClass + "']//li";
+
             try
             {
-                reqsHTML = this.content.DocumentNode.SelectNodes(filter).First().InnerHtml;
+                HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
+             
+                foreach (HtmlNode course in coursesHtml)
+                {
+                    Console.WriteLine(course.InnerHtml);
+                }
+
             }
-            catch (ArgumentNullException)
+            catch (Exception)
             {
                 string msg = onlyPrereqs ? "No Pre-requisites" : "No Pre/Co-Requisites";
                 this.LogError(msg);
             }
-            Console.WriteLine(reqsHTML);
         }
     }
 }
