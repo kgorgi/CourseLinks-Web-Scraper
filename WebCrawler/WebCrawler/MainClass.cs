@@ -10,7 +10,7 @@ namespace WebCrawler
     {
         static void Main(string[] args)
         {
-            var courseExtracter = new CourseExtracter("ACAN", "225");
+            var courseExtracter = new CourseExtracter("SENG", "499");
         }
     }
 }
