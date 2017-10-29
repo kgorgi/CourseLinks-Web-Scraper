@@ -35,17 +35,18 @@ namespace WebCrawler
             Console.ReadLine();
         }
 
-        private void LogError(string error, Exception ex = null)
+        private void LogError(string error)
         {
-            string errorMsgStart = this._fieldOfStudy + " " + this._courseNum + ": ";
+            string courseId = this._fieldOfStudy + " " + this._courseNum + ":";
             Console.Error.WriteLine("-------------------");
-            Console.Error.WriteLine(errorMsgStart + error);
-            if (ex != null)
-            {
-                Console.Error.WriteLine(ex.Message);
-            }
-            
+            Console.Error.WriteLine(courseId);
+            Console.Error.WriteLine(error);
             Console.Error.WriteLine("-------------------");
+        }
+
+        private void LogExecption(Exception ex)
+        {
+            this.LogError(ex.Message);
         }
 
         private void GetCourses(bool onlyPrereqs)
@@ -53,37 +54,74 @@ namespace WebCrawler
             string filterClass = onlyPrereqs ? "prereq" : "precoreq";
             string filter = "//ul[@class='" + filterClass + "']//li";
 
-            try
+            HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
+
+            if(coursesHtml == null)
             {
-                HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
+                this.LogError("No " + (onlyPrereqs ? "Pre-requisites" : "Pre/Co-Requisites"));
+                return;
+            }
 
-                foreach (HtmlNode course in coursesHtml)
+            // TODO Rename course to listItem (after merge with Amandeep)
+            foreach (HtmlNode course in coursesHtml)
+            {
+                string innerHtml = course.InnerHtml;
+
+                if (innerHtml.Contains("permission of"))
                 {
-                    string innerHtml = course.InnerHtml;
-                    int absoluteCheck = innerHtml.IndexOf("and");
-                    if (absoluteCheck > 0 && absoluteCheck < innerHtml.Length * 0.75)
-                    {
-                        // CORS A and CORS B
-                    }
-
-                    int orCheck = innerHtml.IndexOf("or");
-                    if(orCheck > 0 && orCheck < innerHtml.Length * 0.75)
-                    {
-                        // CORS A or CORS B
-                    }
-
-                    HtmlNodeCollection singleLinkCheck = course.SelectNodes("a[@href]");
-                    if(singleLinkCheck.Count == 1)
-                    {
-                        // Cors A; and.
-                    }
+                    // Permission of faulty
+                    Console.WriteLine("Permission of faulty");
+                    Console.WriteLine(course.InnerHtml);
+                    continue;
                 }
 
-            }
-            catch (Exception ex)
-            {
-                string msg = onlyPrereqs ? "No Pre-requisites" : "No Pre/Co-Requisites";
-                this.LogError(msg, ex);
+                if (innerHtml.Contains("Academic Writing Requirement"))
+                {
+                    // Permission of faulty
+                    Console.WriteLine("Academic Writing Requirement");
+                    Console.WriteLine(course.InnerHtml);
+                    continue;
+                }
+
+                if (innerHtml.IndexOf("units of") > -1)
+                {
+                    // N units of subset of courses
+                    Console.WriteLine("N units of CORS A, CORS B, etc");
+                    Console.WriteLine(course.InnerHtml);
+                    continue;
+                }
+
+                int absoluteCheck = innerHtml.IndexOf("and");
+                if (absoluteCheck > 0 && absoluteCheck < innerHtml.Length - 4)
+                {
+                    // CORS A and CORS B
+                    Console.WriteLine("A and B");
+                    Console.WriteLine(course.InnerHtml);
+                    continue;
+                }
+
+                int orCheck = innerHtml.IndexOf("or");
+                if(orCheck > 0 && orCheck < innerHtml.Length - 3)
+                {
+                    // CORS A or CORS B
+                    Console.WriteLine("A or B");
+                    Console.WriteLine(course.InnerHtml);
+                    continue;
+                }
+
+                HtmlNodeCollection singleLinkCheck = course.SelectNodes("a[@href]");
+                if( singleLinkCheck != null && singleLinkCheck.Count == 1)
+                {
+                    // Cors A; and.
+                    Console.WriteLine("A Only");
+                    Console.WriteLine(course.InnerHtml);
+                    continue;
+                }
+
+
+                
+
+                throw new Exception("Unhandled List Dependency:\n" + course.InnerHtml);
             }
         }
 
@@ -92,11 +130,14 @@ namespace WebCrawler
 
             HtmlNodeCollection links = html.SelectNodes("a[@href]");
 
-            foreach (HtmlNode link in links)
+            if (links != null)
             {
-                courseList.AddLast(link.InnerHtml);
+                foreach (HtmlNode link in links)
+                {
+                    courseList.AddLast(link.InnerHtml);
+                }
             }
-
+            
             return courseList.ToArray();
         }
 
