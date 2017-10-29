@@ -1,4 +1,4 @@
-﻿namespace WebCrawler
+﻿namespace UvicCourseCalendar.Infrastructure
 {
     public static class Constants
     {

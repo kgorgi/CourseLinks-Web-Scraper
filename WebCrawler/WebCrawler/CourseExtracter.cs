@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using UvicCourseCalendar.Infrastructure.DataModel;
 
 namespace WebCrawler
 {
@@ -44,18 +45,20 @@ namespace WebCrawler
             {
                 Console.Error.WriteLine(ex.Message);
             }
-            
+
             Console.Error.WriteLine("-------------------");
         }
 
         private void GetCourses(bool onlyPrereqs)
         {
+            List<PreReq> preReqs = new List<PreReq>();
             string filterClass = onlyPrereqs ? "prereq" : "precoreq";
             string filter = "//ul[@class='" + filterClass + "']//li";
 
             try
             {
                 HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
+                var absolutePreReq = new PreReqAbsolute();
 
                 foreach (HtmlNode course in coursesHtml)
                 {
@@ -64,21 +67,39 @@ namespace WebCrawler
                     if (absoluteCheck > 0 && absoluteCheck < innerHtml.Length * 0.75)
                     {
                         // CORS A and CORS B
+                        string[] absCourses = HandleListItem(course);
+                        foreach (var absCourse in absCourses)
+                        {
+                            absolutePreReq.courseIds.Add(absCourse);
+                        }
                     }
 
                     int orCheck = innerHtml.IndexOf("or");
-                    if(orCheck > 0 && orCheck < innerHtml.Length * 0.75)
+                    if (orCheck > 0 && orCheck < innerHtml.Length * 0.75)
                     {
                         // CORS A or CORS B
+                        string[] OneOfCourses = HandleListItem(course);
+
+                        var numberOfCoursesPreReq = new PreReqNumberOfCourses
+                        {
+                            courseIds = new HashSet<string>(OneOfCourses),
+                            NumberOfCourses = 1
+                        };
+
+                        preReqs.Add(numberOfCoursesPreReq);
                     }
 
                     HtmlNodeCollection singleLinkCheck = course.SelectNodes("a[@href]");
-                    if(singleLinkCheck.Count == 1)
+                    if (singleLinkCheck.Count == 1)
                     {
                         // Cors A; and.
+                        absolutePreReq.courseIds.Add(HandleListItem(course)[0]);
                     }
                 }
-
+                if (absolutePreReq?.courseIds?.Count > 0)
+                {
+                    preReqs.Add(absolutePreReq);
+                }
             }
             catch (Exception ex)
             {
@@ -87,8 +108,9 @@ namespace WebCrawler
             }
         }
 
-        private static string[] HandleListItem(HtmlNode html) {
-            LinkedList <string> courseList = new LinkedList<string>();
+        private static string[] HandleListItem(HtmlNode html)
+        {
+            LinkedList<string> courseList = new LinkedList<string>();
 
             HtmlNodeCollection links = html.SelectNodes("a[@href]");
 
@@ -99,6 +121,5 @@ namespace WebCrawler
 
             return courseList.ToArray();
         }
-
     }
 }
