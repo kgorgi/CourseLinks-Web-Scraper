@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WebCrawler
 {
-    public class MainClass 
+    public class WebCrawler 
     {
         static void Main(string[] args)
         {
