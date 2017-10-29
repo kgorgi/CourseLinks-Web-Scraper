@@ -68,20 +68,36 @@ namespace WebCrawler
             // TODO Rename course to listItem (after merge with Amandeep)
             foreach (HtmlNode listItem in coursesHtml)
             {
-                string innerHtml = listItem.InnerHtml;
+                string innerHtml = listItem.InnerHtml.ToLower();
 
                 if (innerHtml.Contains("permission of"))
                 {
-                    // Permission of faulty
-                    Console.WriteLine("Permission of faulty");
+                    // Permission of faulty/department
+                    Console.WriteLine("permission of faulty/department");
                     Console.WriteLine(listItem.InnerHtml);
                     continue;
                 }
 
-                if (innerHtml.Contains("Academic Writing Requirement"))
+                if (innerHtml.Contains("academic writing requirement"))
                 {
-                    // Permission of faulty
+                    // Academic Writing Requirement
                     Console.WriteLine("Academic Writing Requirement");
+                    Console.WriteLine(listItem.InnerHtml);
+                    continue;
+                }
+
+                if (innerHtml.Contains("standing"))
+                {
+                    // Year Requirement
+                    Console.WriteLine("Year Requirement");
+                    Console.WriteLine(listItem.InnerHtml);
+                    continue;
+                }
+
+                if (innerHtml.Contains("GPA"))
+                {
+                    // GPA Requirement
+                    Console.WriteLine("GPA Requirement");
                     Console.WriteLine(listItem.InnerHtml);
                     continue;
                 }
@@ -99,6 +115,14 @@ namespace WebCrawler
 
                     preReqs.Add(numberOfUnitsPreReq);
 
+                    continue;
+                }
+
+                if(innerHtml.IndexOf("of") > -1)
+                {
+                    // N courses of subset of courses
+                    Console.WriteLine("N courses of CORS A, CORS B, etc");
+                    Console.WriteLine(listItem.InnerHtml);
                     continue;
                 }
 
