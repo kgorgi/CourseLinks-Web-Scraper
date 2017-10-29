@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WebCrawler.CourseNodeRepo
+namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
 {
     public class CourseNodeRepo
     {

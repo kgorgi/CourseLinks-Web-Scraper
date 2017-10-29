@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using UvicCourseCalendar.Infrastructure.DataModel;
 
 namespace WebCrawler
 {
@@ -51,27 +52,29 @@ namespace WebCrawler
 
         private void GetCourses(bool onlyPrereqs)
         {
+            List<PreReq> preReqs = new List<PreReq>();
             string filterClass = onlyPrereqs ? "prereq" : "precoreq";
             string filter = "//ul[@class='" + filterClass + "']//li";
 
             HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
+            var absolutePreReq = new PreReqAbsolute();
 
-            if(coursesHtml == null)
+            if (coursesHtml == null)
             {
                 this.LogError("No " + (onlyPrereqs ? "Pre-requisites" : "Pre/Co-Requisites"));
                 return;
             }
 
             // TODO Rename course to listItem (after merge with Amandeep)
-            foreach (HtmlNode course in coursesHtml)
+            foreach (HtmlNode listItem in coursesHtml)
             {
-                string innerHtml = course.InnerHtml;
+                string innerHtml = listItem.InnerHtml;
 
                 if (innerHtml.Contains("permission of"))
                 {
                     // Permission of faulty
                     Console.WriteLine("Permission of faulty");
-                    Console.WriteLine(course.InnerHtml);
+                    Console.WriteLine(listItem.InnerHtml);
                     continue;
                 }
 
@@ -79,7 +82,7 @@ namespace WebCrawler
                 {
                     // Permission of faulty
                     Console.WriteLine("Academic Writing Requirement");
-                    Console.WriteLine(course.InnerHtml);
+                    Console.WriteLine(listItem.InnerHtml);
                     continue;
                 }
 
@@ -87,7 +90,7 @@ namespace WebCrawler
                 {
                     // N units of subset of courses
                     Console.WriteLine("N units of CORS A, CORS B, etc");
-                    Console.WriteLine(course.InnerHtml);
+                    Console.WriteLine(listItem.InnerHtml);
                     continue;
                 }
 
@@ -96,37 +99,57 @@ namespace WebCrawler
                 {
                     // CORS A and CORS B
                     Console.WriteLine("A and B");
-                    Console.WriteLine(course.InnerHtml);
+                    Console.WriteLine(listItem.InnerHtml);
+
+                    string[] absCourses = HandleListItem(listItem);
+                    foreach (var absCourse in absCourses)
+                    {
+                        absolutePreReq.courseIds.Add(absCourse);
+                    }
                     continue;
                 }
 
                 int orCheck = innerHtml.IndexOf("or");
-                if(orCheck > 0 && orCheck < innerHtml.Length - 3)
+                if (orCheck > 0 && orCheck < innerHtml.Length - 3)
                 {
                     // CORS A or CORS B
                     Console.WriteLine("A or B");
-                    Console.WriteLine(course.InnerHtml);
+                    Console.WriteLine(listItem.InnerHtml);
+
+                    string[] OneOfCourses = HandleListItem(listItem);
+
+                    var numberOfCoursesPreReq = new PreReqNumberOfCourses
+                    {
+                        courseIds = new HashSet<string>(OneOfCourses),
+                        NumberOfCourses = 1
+                    };
+
+                    preReqs.Add(numberOfCoursesPreReq);
                     continue;
                 }
 
-                HtmlNodeCollection singleLinkCheck = course.SelectNodes("a[@href]");
-                if( singleLinkCheck != null && singleLinkCheck.Count == 1)
+                HtmlNodeCollection singleLinkCheck = listItem.SelectNodes("a[@href]");
+                if (singleLinkCheck != null && singleLinkCheck.Count == 1)
                 {
                     // Cors A; and.
                     Console.WriteLine("A Only");
-                    Console.WriteLine(course.InnerHtml);
+                    Console.WriteLine(listItem.InnerHtml);
+                    absolutePreReq.courseIds.Add(HandleListItem(listItem)[0]);
                     continue;
                 }
 
+                throw new Exception("Unhandled List Dependency:\n" + listItem.InnerHtml);
+            }
 
-                
-
-                throw new Exception("Unhandled List Dependency:\n" + course.InnerHtml);
+            if (absolutePreReq?.courseIds?.Count > 0)
+            {
+                preReqs.Add(absolutePreReq);
             }
         }
 
-        private static string[] HandleListItem(HtmlNode html) {
-            LinkedList <string> courseList = new LinkedList<string>();
+        private static string[] HandleListItem(HtmlNode html)
+        {
+            LinkedList<string> courseList = new LinkedList<string>();
 
             HtmlNodeCollection links = html.SelectNodes("a[@href]");
 
@@ -140,6 +163,5 @@ namespace WebCrawler
             
             return courseList.ToArray();
         }
-
     }
 }
