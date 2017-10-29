@@ -111,9 +111,26 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
 
         [JsonProperty]
         public string UserFriendlyCondition => condition.GetDescription();
+        
+        private ISet<string> _courseIds;
 
         [JsonProperty]
-        public ISet<string> courseIds { get; set; }
+        public ISet<string> courseIds
+        {
+            get
+            {
+                if (_courseIds == null)
+                {
+                    _courseIds = new HashSet<string>();
+                }
+
+                return _courseIds;
+            }
+            set
+            {
+                _courseIds = value;
+            }
+        }
     }
 
     public sealed class PreReqAbsolute : PreReq
@@ -124,11 +141,16 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
     public sealed class PreReqNumberOfUnits : PreReq
     {
         [JsonProperty]
-        public int Units { get; set; }
+        public float Units { get; set; }
 
         public override PreReqCondition condition => PreReqCondition.Credits;
 
-        public PreReqNumberOfUnits(int units)
+        public PreReqNumberOfUnits()
+        {
+            Units = 0f;
+        }
+
+        public PreReqNumberOfUnits(float units)
         {
             if (units < 1)
             {

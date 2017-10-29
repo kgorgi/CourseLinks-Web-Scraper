@@ -91,6 +91,14 @@ namespace WebCrawler
                     // N units of subset of courses
                     Console.WriteLine("N units of CORS A, CORS B, etc");
                     Console.WriteLine(listItem.InnerHtml);
+
+                    var numberOfUnitsPreReq = new PreReqNumberOfUnits()
+                    {
+                        courseIds = new HashSet<string>(HandleListItem(listItem))
+                    };
+
+                    preReqs.Add(numberOfUnitsPreReq);
+
                     continue;
                 }
 
@@ -160,7 +168,7 @@ namespace WebCrawler
                     courseList.AddLast(link.InnerHtml);
                 }
             }
-            
+
             return courseList.ToArray();
         }
     }
