@@ -101,7 +101,15 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
 
         // Grade required for each course in a list
         [Description("Grade")]
-        Grade
+        Grade,
+
+        // Grade required for each course in a list
+        [Description("Must satisfy this statement")]
+        Statement,
+
+        // Grade required for each course in a list
+        [Description("Must satisfy one of the sections")]
+        Or
     }
 
     public abstract class PreReq
@@ -110,8 +118,11 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         public abstract PreReqCondition condition { get; }
 
         [JsonProperty]
-        public string UserFriendlyCondition => condition.GetDescription();
-        
+        public string UserFriendlyCondition => condition.GetDescription();        
+    }
+
+    public abstract class PreReqWithIds : PreReq
+    {
         private ISet<string> _courseIds;
 
         [JsonProperty]
@@ -133,12 +144,17 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         }
     }
 
-    public sealed class PreReqAbsolute : PreReq
+    public sealed class PreReqAbsoluteStatement : PreReq
     {
-        public override PreReqCondition condition => PreReqCondition.Absolute;
+        public override PreReqCondition condition => PreReqCondition.Statement;
     }
 
-    public sealed class PreReqNumberOfUnits : PreReq
+    public sealed class PreReqAbsolute : PreReqWithIds
+    {
+        public override PreReqCondition condition => PreReqCondition.Absolute;
+    }    
+
+    public sealed class PreReqNumberOfUnits : PreReqWithIds
     {
         [JsonProperty]
         public float Units { get; set; }
@@ -161,7 +177,7 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         }
     }
 
-    public sealed class PreReqNumberOfCourses : PreReq
+    public sealed class PreReqNumberOfCourses : PreReqWithIds
     {
         [JsonProperty]
         public int NumberOfCourses { get; set; }
@@ -182,5 +198,12 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
 
             this.NumberOfCourses = nCourses;
         }
-    }    
+    }
+
+    public sealed class PreReqOrCourses : PreReq
+    {
+        public override PreReqCondition condition => PreReqCondition.Or;
+
+        public List<List<PreReq>> sections;
+    }
 }
