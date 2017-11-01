@@ -12,7 +12,9 @@ namespace WebCrawler
         {
             //var courseExtracter = new CourseExtracter("ACAN", "225");
             //var courseExtracter = new CourseExtracter("CSC", "322");
-            var courseExtracter = new CourseExtracter("ENGR", "001");
+            var preReqExtractor = new CourseExtracter("ENGR", "001", DependencyType.Prereq);
+            var coReqExtractor = new CourseExtracter("ENGR", "001", DependencyType.Coreq);
+            var precoReqExtractor = new CourseExtracter("ENGR", "001", DependencyType.Precoreq);
         }
     }
 }
