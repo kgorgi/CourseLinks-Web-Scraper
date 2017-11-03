@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UvicCourseCalendar.Infrastructure.DataModel;
 
 namespace WebCrawler
 {
@@ -10,11 +11,11 @@ namespace WebCrawler
     {
         static void Main(string[] args)
         {
-            //var courseExtracter = new CourseExtracter("ACAN", "225");
-            //var courseExtracter = new CourseExtracter("CSC", "322");
-            var preReqExtractor = new CourseExtracter("ENGR", "001", DependencyType.Prereq);
-            var coReqExtractor = new CourseExtracter("ENGR", "001", DependencyType.Coreq);
-            var precoReqExtractor = new CourseExtracter("ENGR", "001", DependencyType.Precoreq);
+            var courseExtractor = new CourseExtracter("PHYS", "111", DependencyType.Prereq);
+            List<PreReq> prereqs = courseExtractor.ProcessCourse(DependencyType.Prereq);
+            List<PreReq> coreqs = courseExtractor.ProcessCourse(DependencyType.Coreq);
+            List<PreReq> precoreqs = courseExtractor.ProcessCourse(DependencyType.Precoreq);
+            Console.ReadLine();
         }
     }
 }
