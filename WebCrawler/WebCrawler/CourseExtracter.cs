@@ -1,12 +1,9 @@
-﻿using System;
+﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using HtmlAgilityPack;
-using UvicCourseCalendar.Infrastructure.DataModel;
 using System.Text.RegularExpressions;
+using UvicCourseCalendar.Infrastructure.DataModel;
 
 namespace WebCrawler
 {
@@ -32,7 +29,7 @@ namespace WebCrawler
 
         private List<PreReq> _dependencies;
 
-        public CourseExtracter(string fieldOfStudy, string courseNum, DependencyType type)
+        public CourseExtracter(string fieldOfStudy, string courseNum)
         {
             this._fieldOfStudy = fieldOfStudy;
             this._courseNum = courseNum;
@@ -81,7 +78,7 @@ namespace WebCrawler
 
                 if (this.GetOtherDependencies(rawText, rawTextLower) || 
                     this.GetOfDependencies(rawText, rawTextLower) ||
-                    this.GetOfDependencies(rawText, rawTextLower) ||
+                    this.GetOrDependencies(rawText, rawTextLower) ||
                     this.GetAbsoluteDependencies(rawText, rawTextLower, absolutePreReq))
                     continue;
 
