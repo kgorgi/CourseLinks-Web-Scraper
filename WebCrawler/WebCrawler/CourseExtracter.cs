@@ -32,7 +32,7 @@ namespace WebCrawler
 
         private List<PreReq> _dependencies;
 
-        public CourseExtracter(string fieldOfStudy, string courseNum, DependencyType type)
+        public CourseExtracter(string fieldOfStudy, string courseNum)
         {
             this._fieldOfStudy = fieldOfStudy;
             this._courseNum = courseNum;
@@ -48,7 +48,7 @@ namespace WebCrawler
         public List<PreReq> ProcessCourse(DependencyType type)
         {
             this._dependencies = new List<PreReq>();
-
+            this.LogMessage(type.ToString());
             // Determine HTML Class
             string filterClass = "prereq";
 
@@ -62,14 +62,13 @@ namespace WebCrawler
 
             // Filter Based on Class
             string filter = "//ul[@class='" + filterClass + "']//li";
-
+            
             HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
             var absolutePreReq = new PreReqAbsolute();
 
             // Check if Dependencies Exist
             if (coursesHtml == null)
             {
-                this.LogError("No " + filterClass + "s");
                 return null;
             }
 
@@ -81,7 +80,7 @@ namespace WebCrawler
 
                 if (this.GetOtherDependencies(rawText, rawTextLower) || 
                     this.GetOfDependencies(rawText, rawTextLower) ||
-                    this.GetOfDependencies(rawText, rawTextLower) ||
+                    this.GetOrDependencies(rawText, rawTextLower) ||
                     this.GetAbsoluteDependencies(rawText, rawTextLower, absolutePreReq))
                     continue;
 
@@ -102,25 +101,25 @@ namespace WebCrawler
         private bool GetOtherDependencies(string text, string textLower)
         {
             bool foundDependency = false;
-            if (text.Contains("permission of"))
+            if (textLower.Contains("permission of"))
             {
                 // Permission of faulty/department
                 this.LogMessage("Permission of Faulty or Department");
                 foundDependency = true;
             }
-            else if (text.Contains("academic writing requirement"))
+            else if (textLower.Contains("academic writing requirement"))
             {
                 // Academic Writing Requirement
                 this.LogMessage("Academic Writing Requirement");
                 foundDependency = true;
             }
-            else if (text.Contains("standing"))
+            else if (textLower.Contains("standing"))
             {
                 // Year Requirement
                 this.LogMessage("Year Requirement");
                 foundDependency = true;
             }
-            else if (text.Contains("gpa"))
+            else if (textLower.Contains("gpa"))
             {
                 // GPA Requirement
                 this.LogMessage("GPA Requirement");
@@ -155,7 +154,6 @@ namespace WebCrawler
                 this.LogMessage("Only One Course");
 
                 absolutePreReq.courseIds.Add(ExtractCourses(text)[0]);
-                this.LogMessage(absolutePreReq.courseIds.ToString());
                 foundDependency = true;
             }
 
@@ -166,7 +164,7 @@ namespace WebCrawler
         {
             bool foundDependency = false;
 
-            if (text.IndexOf("or") > 0)
+            if (textLower.IndexOf("or") > 0)
             {
                 // CORS A or CORS B
                this.LogMessage("Course A or Course B");
@@ -189,7 +187,7 @@ namespace WebCrawler
         private bool GetOfDependencies(string text, string textLower)
         {
             bool foundDependency = false;
-            if (text.IndexOf("units of") > -1)
+            if (textLower.IndexOf("units of") > -1)
             {
                 // N units of subset of courses
                 this.LogMessage("N units of a list of courses");
@@ -202,7 +200,7 @@ namespace WebCrawler
 
                 this._dependencies.Add(numberOfUnitsPreReq);
                 foundDependency = true;
-            } else if (text.IndexOf("of") > -1)
+            } else if (textLower.IndexOf("of") > -1)
             {
                 // N courses of subset of courses
                 this.LogMessage("N courses of a list of courses");
@@ -215,14 +213,14 @@ namespace WebCrawler
         /* GENERAL PROCESSING HELPER METHODS */
         private string PrepareForProcessing(string str)
         {
-            this.LogMessage("Preparing for Proccessing:\n" + str);
+            // this.LogMessage("Preparing for Proccessing:\n" + str);
             string noTags = RemoveHtmlTags(str);
 
             // Remove appended ";and, ";or", etc
             int semiColonCheck = noTags.IndexOf(";");
             if (semiColonCheck > -1)
             {
-                noTags = noTags.Substring(0, semiColonCheck - 1);
+                noTags = noTags.Substring(0, semiColonCheck);
             }
 
             return noTags;
@@ -271,7 +269,7 @@ namespace WebCrawler
             var document = new HtmlDocument();
             document.LoadHtml(data);
 
-            var acceptableTags = new String[] { "strong", "em", "u" };
+            var acceptableTags = new String[] { };
 
             var nodes = new Queue<HtmlNode>(document.DocumentNode.SelectNodes("./*|./text()"));
             while (nodes.Count > 0)
@@ -288,7 +286,7 @@ namespace WebCrawler
                         foreach (var child in childNodes)
                         {
                             nodes.Enqueue(child);
-                            parentNode.InsertBefore(child, node);
+                            parentNode.InsertBefore(child, node);  
                         }
                     }
 

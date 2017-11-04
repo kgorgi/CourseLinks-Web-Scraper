@@ -11,11 +11,17 @@ namespace WebCrawler
     {
         static void Main(string[] args)
         {
-            var courseExtractor = new CourseExtracter("PHYS", "111", DependencyType.Prereq);
-            List<PreReq> prereqs = courseExtractor.ProcessCourse(DependencyType.Prereq);
-            List<PreReq> coreqs = courseExtractor.ProcessCourse(DependencyType.Coreq);
-            List<PreReq> precoreqs = courseExtractor.ProcessCourse(DependencyType.Precoreq);
-            Console.ReadLine();
+            string lineRead = Console.ReadLine();
+            while(lineRead != "EXIT")
+            {
+                Console.Clear();
+                string[] course = lineRead.Split(' ');
+                var courseExtractor = new CourseExtracter(course[0], course[1]);
+                List <PreReq> prereqs = courseExtractor.ProcessCourse(DependencyType.Prereq);
+                List<PreReq> coreqs = courseExtractor.ProcessCourse(DependencyType.Coreq);
+                List<PreReq> precoreqs = courseExtractor.ProcessCourse(DependencyType.Precoreq);
+                lineRead = Console.ReadLine();
+            }
         }
     }
 }
