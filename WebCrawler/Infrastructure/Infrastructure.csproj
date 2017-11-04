@@ -51,6 +51,7 @@
     <Compile Include="DataModel\CourseNode.cs" />
     <Compile Include="ExtensionFuctions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\LogHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

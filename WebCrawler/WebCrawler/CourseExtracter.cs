@@ -14,12 +14,12 @@ namespace WebCrawler
         Precoreq
     }
 
-    class CourseExtracter
+    public class CourseExtracter
     {
         const string rootUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
         const string slash = "/";
         const string urlEnd = ".html";
-        private static Regex coursePattern = new Regex("[A-Z]{2,4} \\d{3}");
+        public static Regex CoursePattern = new Regex("[A-Z]{2,4} \\d{3}");
 
         private string _fieldOfStudy;
         private string _courseNum;
@@ -75,14 +75,18 @@ namespace WebCrawler
             {
                 string rawText = PrepareForProcessing(listItem.InnerHtml);
                 string rawTextLower = rawText.ToLowerInvariant();
+                Action<string> logCallBack = LogMessage;
 
-                if (this.GetOtherDependencies(rawText, rawTextLower) || 
-                    this.GetOfDependencies(rawText, rawTextLower) ||
-                    this.GetOrDependencies(rawText, rawTextLower) ||
-                    this.GetAbsoluteDependencies(rawText, rawTextLower, absolutePreReq))
-                    continue;
-
-                this.LogError("Unhandled List Dependency:\n" + listItem.InnerHtml);
+                DependencyParser dependencyParser = new DependencyParser(rawText, rawTextLower, absolutePreReq, logCallBack);
+                var foundDependencies = dependencyParser.GetDependencies();
+                if (foundDependencies.Count > 0)
+                {
+                    _dependencies.AddRange(foundDependencies);
+                }
+                else
+                {
+                    this.LogError("Unhandled List Dependency:\n" + listItem.InnerHtml);
+                }
             }
 
             if (absolutePreReq?.courseIds?.Count > 0)
@@ -95,120 +99,7 @@ namespace WebCrawler
             return list;
         }
 
-        /* SPECIFIC PROCESSING HELPER METHODS */
-        private bool GetOtherDependencies(string text, string textLower)
-        {
-            bool foundDependency = false;
-            if (text.Contains("permission of"))
-            {
-                // Permission of faulty/department
-                this.LogMessage("Permission of Faulty or Department");
-                foundDependency = true;
-            }
-            else if (text.Contains("academic writing requirement"))
-            {
-                // Academic Writing Requirement
-                this.LogMessage("Academic Writing Requirement");
-                foundDependency = true;
-            }
-            else if (text.Contains("standing"))
-            {
-                // Year Requirement
-                this.LogMessage("Year Requirement");
-                foundDependency = true;
-            }
-            else if (text.Contains("gpa"))
-            {
-                // GPA Requirement
-                this.LogMessage("GPA Requirement");
-                foundDependency = true;
-            }
-
-            return foundDependency;
-        }
-
-        private bool GetAbsoluteDependencies(string text, string textLower, PreReqAbsolute absolutePreReq)
-        {
-            bool foundDependency = false;
-            int absoluteCheck = textLower.IndexOf("and");
-            if (absoluteCheck > 0)
-            {
-                // CORS A and CORS B
-                this.LogMessage("Course A and Course B");
-
-                string[] absCourses = ExtractCourses(text);
-                foreach (var absCourse in absCourses)
-                {
-                    absolutePreReq.courseIds.Add(absCourse);
-                }
-
-                foundDependency = true;
-            }
-
-            MatchCollection absoluteMatches = coursePattern.Matches(text);
-            if (absoluteMatches.Count == 1)
-            {
-                // Single Course
-                this.LogMessage("Only One Course");
-
-                absolutePreReq.courseIds.Add(ExtractCourses(text)[0]);
-                this.LogMessage(absolutePreReq.courseIds.ToString());
-                foundDependency = true;
-            }
-
-            return foundDependency;
-        }
-
-        private bool GetOrDependencies(string text, string textLower)
-        {
-            bool foundDependency = false;
-
-            if (text.IndexOf("or") > 0)
-            {
-                // CORS A or CORS B
-               this.LogMessage("Course A or Course B");
-
-                //string[] OneOfCourses = HandleListItem(listItem);
-
-                //var numberOfCoursesPreReq = new PreReqNumberOfCourses
-                //{
-                //    courseIds = new HashSet<string>(OneOfCourses),
-                //    NumberOfCourses = 1
-                //};
-
-                //dependencies.Add(numberOfCoursesPreReq);
-                foundDependency = true;
-            }
-
-            return foundDependency;
-        }
-
-        private bool GetOfDependencies(string text, string textLower)
-        {
-            bool foundDependency = false;
-            if (text.IndexOf("units of") > -1)
-            {
-                // N units of subset of courses
-                this.LogMessage("N units of a list of courses");
-
-                var numberOfUnitsPreReq = new PreReqNumberOfUnits()
-                {
-                    // TODO Fix
-                    // courseIds = new HashSet<string>(HandleListItem(listItem))
-                };
-
-                this._dependencies.Add(numberOfUnitsPreReq);
-                foundDependency = true;
-            } else if (text.IndexOf("of") > -1)
-            {
-                // N courses of subset of courses
-                this.LogMessage("N courses of a list of courses");
-                foundDependency = true;
-            }
-
-            return foundDependency;
-        }
-
+        
         /* GENERAL PROCESSING HELPER METHODS */
         private string PrepareForProcessing(string str)
         {
@@ -246,10 +137,10 @@ namespace WebCrawler
         }
 
         /* STATIC HELPER METHODS */
-        private static string[] ExtractCourses(string text)
+        public  static string[] ExtractCourses(string text)
         {
             // Regex [A-Z]{2,4} \d{3}
-            MatchCollection matchCourses = coursePattern.Matches(text);
+            MatchCollection matchCourses = CoursePattern.Matches(text);
             string[] courses = new string[matchCourses.Count];
 
             for(int i = 0; i < matchCourses.Count; i++)
