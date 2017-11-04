@@ -1,0 +1,151 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using UvicCourseCalendar.Infrastructure.DataModel;
+
+namespace WebCrawler
+{
+    public class DependencyParser
+    {
+        private string _text;
+        private string _textLower;
+        private Action<string> _logMessage;
+        private PreReqAbsolute _absolutePreRe;
+        private List<PreReq> _dependencies;
+
+        public DependencyParser(string text, string lowerText, PreReqAbsolute absDependency, Action<string> logMethodCallBack)
+        {
+            _text = text;
+            _textLower = lowerText;
+            _absolutePreRe = absDependency;
+            this._logMessage = logMethodCallBack;
+            _dependencies = new List<PreReq>();
+        }
+
+        public List<PreReq> GetDependencies()
+        {
+            this.GetOtherDependencies();
+            this.GetOfDependencies();
+            this.GetOrDependencies();
+            this.GetAbsoluteDependencies();
+
+            return _dependencies;
+        }
+
+        /* SPECIFIC PROCESSING HELPER METHODS */
+        private bool GetOtherDependencies()
+        {
+            bool foundDependency = false;
+            if (_text.Contains("permission of"))
+            {
+                // Permission of faulty/department
+                _logMessage("Permission of Faulty or Department");
+                foundDependency = true;
+            }
+            else if (_text.Contains("academic writing requirement"))
+            {
+                // Academic Writing Requirement
+                _logMessage("Academic Writing Requirement");
+                foundDependency = true;
+            }
+            else if (_text.Contains("standing"))
+            {
+                // Year Requirement
+                _logMessage("Year Requirement");
+                foundDependency = true;
+            }
+            else if (_text.Contains("gpa"))
+            {
+                // GPA Requirement
+                _logMessage("GPA Requirement");
+                foundDependency = true;
+            }
+
+            return foundDependency;
+        }
+
+        private bool GetAbsoluteDependencies()
+        {
+            bool foundDependency = false;
+            int absoluteCheck = _textLower.IndexOf("and");
+            if (absoluteCheck > 0)
+            {
+                // CORS A and CORS B
+                _logMessage("Course A and Course B");
+
+                string[] absCourses = CourseExtracter.ExtractCourses(_text);
+                foreach (var absCourse in absCourses)
+                {
+                    _absolutePreRe.courseIds.Add(absCourse);
+                }
+
+                foundDependency = true;
+            }
+
+            MatchCollection absoluteMatches = CourseExtracter.CoursePattern.Matches(_text);
+            if (absoluteMatches.Count == 1)
+            {
+                // Single Course
+                _logMessage("Only One Course");
+
+                _absolutePreRe.courseIds.Add(CourseExtracter.ExtractCourses(_text)[0]);
+                _logMessage(_absolutePreRe.courseIds.ToString());
+                foundDependency = true;
+            }
+
+            return foundDependency;
+        }
+
+        private bool GetOrDependencies()
+        {
+            bool foundDependency = false;
+
+            if (_text.IndexOf("or") > 0)
+            {
+                // CORS A or CORS B
+                _logMessage("Course A or Course B");
+
+                //string[] OneOfCourses = HandleListItem(listItem);
+
+                //var numberOfCoursesPreReq = new PreReqNumberOfCourses
+                //{
+                //    courseIds = new HashSet<string>(OneOfCourses),
+                //    NumberOfCourses = 1
+                //};
+
+                //dependencies.Add(numberOfCoursesPreReq);
+                foundDependency = true;
+            }
+
+            return foundDependency;
+        }
+
+        private bool GetOfDependencies()
+        {
+            bool foundDependency = false;
+            if (_text.IndexOf("units of") > -1)
+            {
+                // N units of subset of courses
+                _logMessage("N units of a list of courses");
+
+                var numberOfUnitsPreReq = new PreReqNumberOfUnits()
+                {
+                    // TODO Fix
+                    // courseIds = new HashSet<string>(HandleListItem(listItem))
+                };
+
+                this._dependencies.Add(numberOfUnitsPreReq);
+                foundDependency = true;
+            }
+            else if (_text.IndexOf("of") > -1)
+            {
+                // N courses of subset of courses
+                _logMessage("N courses of a list of courses");
+                foundDependency = true;
+            }
+
+            return foundDependency;
+        }
+
+    }
+}
