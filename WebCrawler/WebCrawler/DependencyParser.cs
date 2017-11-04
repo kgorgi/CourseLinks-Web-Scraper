@@ -36,25 +36,25 @@ namespace WebCrawler
         private bool GetOtherDependencies()
         {
             bool foundDependency = false;
-            if (_text.Contains("permission of"))
+            if (_textLower.Contains("permission of"))
             {
                 // Permission of faulty/department
                 _logMessage("Permission of Faulty or Department");
                 foundDependency = true;
             }
-            else if (_text.Contains("academic writing requirement"))
+            else if (_textLower.Contains("academic writing requirement"))
             {
                 // Academic Writing Requirement
                 _logMessage("Academic Writing Requirement");
                 foundDependency = true;
             }
-            else if (_text.Contains("standing"))
+            else if (_textLower.Contains("standing"))
             {
                 // Year Requirement
                 _logMessage("Year Requirement");
                 foundDependency = true;
             }
-            else if (_text.Contains("gpa"))
+            else if (_textLower.Contains("gpa"))
             {
                 // GPA Requirement
                 _logMessage("GPA Requirement");
@@ -89,7 +89,6 @@ namespace WebCrawler
                 _logMessage("Only One Course");
 
                 _absolutePreRe.courseIds.Add(CourseExtracter.ExtractCourses(_text)[0]);
-                _logMessage(_absolutePreRe.courseIds.ToString());
                 foundDependency = true;
             }
 
@@ -100,7 +99,7 @@ namespace WebCrawler
         {
             bool foundDependency = false;
 
-            if (_text.IndexOf("or") > 0)
+            if (_textLower.IndexOf("or") > 0)
             {
                 // CORS A or CORS B
                 _logMessage("Course A or Course B");
@@ -123,7 +122,7 @@ namespace WebCrawler
         private bool GetOfDependencies()
         {
             bool foundDependency = false;
-            if (_text.IndexOf("units of") > -1)
+            if (_textLower.IndexOf("units of") > -1)
             {
                 // N units of subset of courses
                 _logMessage("N units of a list of courses");
@@ -137,7 +136,7 @@ namespace WebCrawler
                 this._dependencies.Add(numberOfUnitsPreReq);
                 foundDependency = true;
             }
-            else if (_text.IndexOf("of") > -1)
+            else if (_textLower.IndexOf("of") > -1)
             {
                 // N courses of subset of courses
                 _logMessage("N courses of a list of courses");
