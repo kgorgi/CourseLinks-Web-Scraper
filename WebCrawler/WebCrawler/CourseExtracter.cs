@@ -77,11 +77,12 @@ namespace WebCrawler
             foreach (HtmlNode listItem in coursesHtml)
             {
                 string rawText = PrepareForProcessing(listItem.InnerHtml);
-                string rawTextLower = rawText.ToLower();
+                string rawTextLower = rawText.ToLowerInvariant();
 
-                if (this.GetOtherDependencies(rawTextLower) || this.GetOfDependencies(rawTextLower) ||
-                    this.GetOfDependencies(rawTextLower) ||
-                    this.GetAbsoluteDependencies(rawTextLower, absolutePreReq))
+                if (this.GetOtherDependencies(rawText, rawTextLower) || 
+                    this.GetOfDependencies(rawText, rawTextLower) ||
+                    this.GetOfDependencies(rawText, rawTextLower) ||
+                    this.GetAbsoluteDependencies(rawText, rawTextLower, absolutePreReq))
                     continue;
 
                 this.LogError("Unhandled List Dependency:\n" + listItem.InnerHtml);
@@ -98,7 +99,7 @@ namespace WebCrawler
         }
 
         /* SPECIFIC PROCESSING HELPER METHODS */
-        private bool GetOtherDependencies(string text)
+        private bool GetOtherDependencies(string text, string textLower)
         {
             bool foundDependency = false;
             if (text.Contains("permission of"))
@@ -129,21 +130,21 @@ namespace WebCrawler
             return foundDependency;
         }
 
-        private bool GetAbsoluteDependencies(string text, PreReqAbsolute absolutePreReq)
+        private bool GetAbsoluteDependencies(string text, string textLower, PreReqAbsolute absolutePreReq)
         {
             bool foundDependency = false;
-
-            int absoluteCheck = text.IndexOf("and");
+            int absoluteCheck = textLower.IndexOf("and");
             if (absoluteCheck > 0)
             {
                 // CORS A and CORS B
                 this.LogMessage("Course A and Course B");
 
-                //string[] absCourses = HandleListItem(text);
-                //foreach (var absCourse in absCourses)
-                //{
-                //    absolutePreReq.courseIds.Add(absCourse);
-                //}
+                string[] absCourses = ExtractCourses(text);
+                foreach (var absCourse in absCourses)
+                {
+                    absolutePreReq.courseIds.Add(absCourse);
+                }
+
                 foundDependency = true;
             }
 
@@ -153,15 +154,15 @@ namespace WebCrawler
                 // Single Course
                 this.LogMessage("Only One Course");
 
-                // absolutePreReq.courseIds.Add(HandleListItem(listItem)[0]);
-
+                absolutePreReq.courseIds.Add(ExtractCourses(text)[0]);
+                this.LogMessage(absolutePreReq.courseIds.ToString());
                 foundDependency = true;
             }
 
             return foundDependency;
         }
 
-        private bool GetOrDependencies(string text)
+        private bool GetOrDependencies(string text, string textLower)
         {
             bool foundDependency = false;
 
@@ -185,7 +186,7 @@ namespace WebCrawler
             return foundDependency;
         }
 
-        private bool GetOfDependencies(string text)
+        private bool GetOfDependencies(string text, string textLower)
         {
             bool foundDependency = false;
             if (text.IndexOf("units of") > -1)
@@ -253,7 +254,11 @@ namespace WebCrawler
             // Regex [A-Z]{2,4} \d{3}
             MatchCollection matchCourses = coursePattern.Matches(text);
             string[] courses = new string[matchCourses.Count];
-            matchCourses.CopyTo(courses, 0);
+
+            for(int i = 0; i < matchCourses.Count; i++)
+            {
+                courses[i] = matchCourses[i].ToString();
+            }
 
             return courses;
         }
