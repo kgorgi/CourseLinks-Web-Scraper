@@ -102,12 +102,11 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         // Grade required for each course in a list
         [Description("Grade")]
         Grade,
-
-        // Grade required for each course in a list
+                
         [Description("Must satisfy this statement")]
         Statement,
 
-        // Grade required for each course in a list
+        // Collection of various Pre-Reqs. Any one of the collections must be satisfied.
         [Description("Must satisfy one of the sections")]
         Or
     }
