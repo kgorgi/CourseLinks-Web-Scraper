@@ -248,23 +248,14 @@ namespace WebCrawler
         }
 
         /* STATIC HELPER METHODS */
-        private static string[] HandleListItem(HtmlNode html)
+        private static string[] ExtractCourses(string text)
         {
             // Regex [A-Z]{2,4} \d{3}
+            MatchCollection matchCourses = coursePattern.Matches(text);
+            string[] courses = new string[matchCourses.Count];
+            matchCourses.CopyTo(courses, 0);
 
-            LinkedList<string> courseList = new LinkedList<string>();
-
-            HtmlNodeCollection links = html.SelectNodes("a[@href]");
-
-            if (links != null)
-            {
-                foreach (HtmlNode link in links)
-                {
-                    courseList.AddLast(link.InnerHtml);
-                }
-            }
-
-            return courseList.ToArray();
+            return courses;
         }
 
         // https://stackoverflow.com/questions/12787449/html-agility-pack-removing-unwanted-tags-without-removing-content
