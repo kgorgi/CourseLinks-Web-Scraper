@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CourseExtracter.cs" />
+    <Compile Include="CourseList.cs" />
     <Compile Include="DependencyParser.cs" />
     <Compile Include="WebCrawler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
