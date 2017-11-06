@@ -3,10 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UvicCourseCalendar.Infrastructure;
 
 namespace UvicCourseCalendar.Infrastructure.DataModel
 {
@@ -15,7 +11,7 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         #region Properties
 
         [JsonIgnore]
-        public string CourseId => FieldOfStudy + CourseCode;
+        public string CourseId => FieldOfStudy.ToUpper() + " " + CourseCode.ToUpper();
 
         [JsonProperty]
         public string CourseCode { get; set; }
@@ -102,7 +98,7 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         // Grade required for each course in a list
         [Description("Grade")]
         Grade,
-                
+
         [Description("Must satisfy this statement")]
         Statement,
 
@@ -117,7 +113,7 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         public abstract PreReqCondition condition { get; }
 
         [JsonProperty]
-        public string UserFriendlyCondition => condition.GetDescription();        
+        public string UserFriendlyCondition => condition.GetDescription();
     }
 
     public abstract class PreReqWithIds : PreReq
@@ -151,7 +147,7 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
     public sealed class PreReqAbsolute : PreReqWithIds
     {
         public override PreReqCondition condition => PreReqCondition.Absolute;
-    }    
+    }
 
     public sealed class PreReqNumberOfUnits : PreReqWithIds
     {
