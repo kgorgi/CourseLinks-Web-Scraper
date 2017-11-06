@@ -24,10 +24,10 @@ namespace WebCrawler
             return _startUrl + fieldOfStudy + _endUrl;
         }
 
-        private static HtmlWeb _fieldsOfStudyWebpage = new HtmlWeb();
+        private static HtmlWeb _htmlParser = new HtmlWeb();
         public static List<string> GetFieldOfStudyList()
         {
-            HtmlDocument fieldsOfStudyHtml = _fieldsOfStudyWebpage.Load(FieldOfStudyUrl);
+            HtmlDocument fieldsOfStudyHtml = _htmlParser.Load(FieldOfStudyUrl);
 
             string filter = "//tr[@onclick]//td//a";
 
@@ -47,8 +47,7 @@ namespace WebCrawler
         {
             string coursesIndexUrl = GetCourseListUrl(fieldOfStudy);
 
-            HtmlWeb courseListWebPage = new HtmlWeb();
-            HtmlDocument courseListHtml = courseListWebPage.Load(coursesIndexUrl);
+            HtmlDocument courseListHtml = _htmlParser.Load(coursesIndexUrl);
 
             string filter = "//tr[@onclick]//td//a";
 
