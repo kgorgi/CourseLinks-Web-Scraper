@@ -23,10 +23,13 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         public string MarkUp { get; set; }
 
         [JsonProperty]
-        public List<PreReq> PreReqs { get; set; }
+        public List<Dependency> PreReqs { get; set; }
 
         [JsonProperty]
-        public List<PreReq> CoReqs { get; set; }
+        public List<Dependency> CoReqs { get; set; }
+
+        [JsonProperty]
+        public List<Dependency> PreOrCoReqs { get; set; }
 
         #endregion Properties
 
@@ -81,7 +84,7 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         #endregion Equality
     }
 
-    public enum PreReqCondition
+    public enum DependencyCondition
     {
         // Number of courses required from a list of courses
         [Description("Courses")]
@@ -107,16 +110,16 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         Or
     }
 
-    public abstract class PreReq
+    public abstract class Dependency
     {
         [JsonIgnore]
-        public abstract PreReqCondition condition { get; }
+        public abstract DependencyCondition condition { get; }
 
         [JsonProperty]
         public string UserFriendlyCondition => condition.GetDescription();
     }
 
-    public abstract class PreReqWithIds : PreReq
+    public abstract class DependencyWithIds : Dependency
     {
         private ISet<string> _courseIds;
 
@@ -139,29 +142,29 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         }
     }
 
-    public sealed class PreReqAbsoluteStatement : PreReq
+    public sealed class DependencyAbsoluteText : Dependency
     {
-        public override PreReqCondition condition => PreReqCondition.Statement;
+        public override DependencyCondition condition => DependencyCondition.Statement;
     }
 
-    public sealed class PreReqAbsolute : PreReqWithIds
+    public sealed class DependencyAbsolute : DependencyWithIds
     {
-        public override PreReqCondition condition => PreReqCondition.Absolute;
+        public override DependencyCondition condition => DependencyCondition.Absolute;
     }
 
-    public sealed class PreReqNumberOfUnits : PreReqWithIds
+    public sealed class DependencyNumberOfUnits : DependencyWithIds
     {
         [JsonProperty]
         public float Units { get; set; }
 
-        public override PreReqCondition condition => PreReqCondition.Credits;
+        public override DependencyCondition condition => DependencyCondition.Credits;
 
-        public PreReqNumberOfUnits()
+        public DependencyNumberOfUnits()
         {
             Units = 0f;
         }
 
-        public PreReqNumberOfUnits(float units)
+        public DependencyNumberOfUnits(float units)
         {
             if (units < 1)
             {
@@ -172,19 +175,19 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         }
     }
 
-    public sealed class PreReqNumberOfCourses : PreReqWithIds
+    public sealed class DependencyNumberOfCourses : DependencyWithIds
     {
         [JsonProperty]
         public int NumberOfCourses { get; set; }
 
-        public override PreReqCondition condition => PreReqCondition.Courses;
+        public override DependencyCondition condition => DependencyCondition.Courses;
 
-        public PreReqNumberOfCourses()
+        public DependencyNumberOfCourses()
         {
             this.NumberOfCourses = 1;
         }
 
-        public PreReqNumberOfCourses(int nCourses)
+        public DependencyNumberOfCourses(int nCourses)
         {
             if (nCourses < 1)
             {
@@ -195,10 +198,10 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         }
     }
 
-    public sealed class PreReqOrCourses : PreReq
+    public sealed class DependencyWithOrCourses : Dependency
     {
-        public override PreReqCondition condition => PreReqCondition.Or;
+        public override DependencyCondition condition => DependencyCondition.Or;
 
-        public List<List<PreReq>> sections;
+        public List<List<Dependency>> sections;
     }
 }
