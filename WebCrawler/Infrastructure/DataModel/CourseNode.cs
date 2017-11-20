@@ -145,6 +145,8 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
     public sealed class DependencyAbsoluteText : Dependency
     {
         public override DependencyCondition condition => DependencyCondition.Statement;
+
+        public string ConditionStatement { get; set; }
     }
 
     public sealed class DependencyAbsolute : DependencyWithIds
