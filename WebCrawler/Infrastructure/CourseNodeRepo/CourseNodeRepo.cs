@@ -25,6 +25,7 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
     {
         private Dictionary<string, CourseNode> _courses;
         private string _dataPath;
+        private JsonSerializerSettings jset = new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Objects };
 
         public CourseNodeRepo(string dataPath = null)
         {
@@ -70,15 +71,15 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
             }
 
             _courses = new Dictionary<string, CourseNode>();
-
-            foreach(var folder in new DirectoryInfo(_dataPath).GetDirectories())
+            
+            foreach (var folder in new DirectoryInfo(_dataPath).GetDirectories())
             {
                 foreach(var file in folder.GetFiles("*.JSON"))
                 {
                     var rawJson = File.ReadAllText(file.FullName);
-                    //CourseNode course =  JsonConvert.DeserializeObject<CourseNode>(rawJson);
+                    CourseNode course = (CourseNode)JsonConvert.DeserializeObject<CourseNode>(rawJson, jset);
 
-                    //_courses.Add(course.CourseId, course);
+                    _courses.Add(course.CourseId, course);
                 }
             }
         }
@@ -95,7 +96,7 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
             CreateDirIfNotFound(_dataPath);
 
             var coursesGroupByFeildOfStudy = _courses.Values.GroupBy(x => x.FieldOfStudy).OrderBy(x => x.Key);
-
+            
             foreach (var fieldOfStudyGroup in coursesGroupByFeildOfStudy)
             {
                 var fieldOfStudy = fieldOfStudyGroup.Key;
@@ -105,7 +106,7 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
                 foreach (var course in fieldOfStudyGroup)
                 {
                     var courseFileName = course.CourseId + ".JSON";
-                    var fileContent = JsonConvert.SerializeObject(course);
+                    var fileContent = JsonConvert.SerializeObject(course, jset);
 
                     File.WriteAllText(fieldOfStudyPath + "\\" + courseFileName, fileContent);
                 }
