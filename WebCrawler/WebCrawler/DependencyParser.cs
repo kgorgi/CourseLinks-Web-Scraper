@@ -10,16 +10,16 @@ namespace WebCrawler
         private string _text;
         private string _textLower;
         private Action<string> _logMessage;
-        private PreReqAbsolute _absolutePreRe;
+        private PreReqAbsolute _absolutePreReq;
         private List<PreReq> _dependencies;
 
-        public DependencyParser(string text, string lowerText, PreReqAbsolute absDependency, Action<string> logMethodCallBack)
+        public DependencyParser(string text, PreReqAbsolute absDependency, Action<string> logMethodCallback)
         {
-            _text = text;
-            _textLower = lowerText;
-            _absolutePreRe = absDependency;
-            this._logMessage = logMethodCallBack;
-            _dependencies = new List<PreReq>();
+            this._text = text;
+            this._textLower = text.ToLower();
+            this._absolutePreReq = absDependency;
+            this._logMessage = logMethodCallback;
+            this._dependencies = new List<PreReq>();
         }
 
         public List<PreReq> GetDependencies()
@@ -76,7 +76,7 @@ namespace WebCrawler
                 string[] absCourses = CourseExtracter.ExtractCourses(_text);
                 foreach (var absCourse in absCourses)
                 {
-                    _absolutePreRe.courseIds.Add(absCourse);
+                    _absolutePreReq.courseIds.Add(absCourse);
                 }
 
                 foundDependency = true;
@@ -88,7 +88,7 @@ namespace WebCrawler
                 // Single Course
                 _logMessage("Only One Course");
 
-                _absolutePreRe.courseIds.Add(CourseExtracter.ExtractCourses(_text)[0]);
+                _absolutePreReq.courseIds.Add(CourseExtracter.ExtractCourses(_text)[0]);
                 foundDependency = true;
             }
 

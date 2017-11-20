@@ -16,9 +16,9 @@ namespace WebCrawler
 
     public class CourseExtracter
     {
-        const string rootUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
-        const string slash = "/";
-        const string urlEnd = ".html";
+        private const string rootUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
+        private const string middleUrl = "/";
+        private const string urlEnd = ".html";
         public static Regex CoursePattern = new Regex("[A-Z]{2,4} \\d{3}");
 
         private string _fieldOfStudy;
@@ -38,7 +38,7 @@ namespace WebCrawler
             // Get Webpage
             // TODO Try Catch
             HtmlWeb web = new HtmlWeb();
-            string requestUrl = rootUrl + fieldOfStudy + slash + courseNum + urlEnd;
+            string requestUrl = rootUrl + fieldOfStudy + middleUrl + courseNum + urlEnd;
             this.content = web.Load(requestUrl); 
         }
 
@@ -73,11 +73,10 @@ namespace WebCrawler
             foreach (HtmlNode listItem in coursesHtml)
             {
                 string rawText = PrepareForProcessing(listItem.InnerHtml);
-                string rawTextLower = rawText.ToLowerInvariant();
                 Action<string> logCallBack = LogMessage;
 
-                DependencyParser dependencyParser = new DependencyParser(rawText, rawTextLower, absolutePreReq, logCallBack);
-                var foundDependencies = dependencyParser.GetDependencies();
+                DependencyParser dependencyParser = new DependencyParser(rawText, absolutePreReq, logCallBack);
+                List<PreReq> foundDependencies = dependencyParser.GetDependencies();
                 if (foundDependencies.Count > 0)
                 {
                     _dependencies.AddRange(foundDependencies);
@@ -97,8 +96,7 @@ namespace WebCrawler
             this._dependencies = null;
             return list;
         }
-
-        
+   
         /* GENERAL PROCESSING HELPER METHODS */
         private string PrepareForProcessing(string str)
         {
