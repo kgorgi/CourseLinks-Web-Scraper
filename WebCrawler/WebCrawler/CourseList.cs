@@ -7,7 +7,13 @@ namespace WebCrawler
 {
     class CourseList
     {
-        private static string _fieldsOfStudyIndexUrl = "https://web.uvic.ca/calendar2017-09/courses/index.html";
+        private const string _fieldsOfStudyIndexUrl = "https://web.uvic.ca/calendar2017-09/courses/index.html";
+
+        private const string _coursesUrlStart = "https://web.uvic.ca/calendar2017-09/CDs/";
+        private const string _coursesUrlEnd = "/CTs.html";
+
+        private static HtmlWeb _htmlParser = new HtmlWeb();
+
         public static string FieldOfStudyUrl 
         {
             get
@@ -16,15 +22,11 @@ namespace WebCrawler
             }
         }
 
-        private static string _startUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
-        private static string _endUrl = "/CTs.html";
-
         private static string GetCourseListUrl(string fieldOfStudy)
         {
-            return _startUrl + fieldOfStudy + _endUrl;
+            return _coursesUrlStart + fieldOfStudy + _coursesUrlEnd;
         }
-
-        private static HtmlWeb _htmlParser = new HtmlWeb();
+ 
         public static List<string> GetFieldOfStudyList()
         {
             HtmlDocument fieldsOfStudyHtml = _htmlParser.Load(FieldOfStudyUrl);

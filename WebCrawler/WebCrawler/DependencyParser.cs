@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UvicCourseCalendar.Infrastructure.DataModel;
 
 namespace WebCrawler
@@ -10,21 +9,26 @@ namespace WebCrawler
         private string _text;
         private string _textLower;
         private Action<string> _logMessage;
-        private DependencyAbsolute _absolutePreRe;
         private List<Dependency> _dependencies;
+        private string[] courseList;
 
-        public DependencyParser(string text, string lowerText, DependencyAbsolute absDependency, Action<string> logMethodCallBack)
+        public DependencyParser(string text, Action<string> logMethodCallback)
         {
-            _text = text;
-            _textLower = lowerText;
-            _absolutePreRe = absDependency;
-            this._logMessage = logMethodCallBack;
-            _dependencies = new List<Dependency>();
+            this._text = text;
+            this._textLower = text.ToLower();
+            this._logMessage = logMethodCallback;
+            this._dependencies = new List<Dependency>();
         }
 
         public List<Dependency> GetDependencies()
         {
-            this.GetOtherDependencies();
+            if(this.GetConditionStatementDependencies())
+            {
+                return _dependencies;
+            }
+
+            courseList = CourseExtractHelper.ExtractCourses(_text);
+
             this.GetOfDependencies();
             this.GetOrDependencies();
             this.GetAbsoluteDependencies();
@@ -33,7 +37,7 @@ namespace WebCrawler
         }
 
         /* SPECIFIC PROCESSING HELPER METHODS */
-        private bool GetOtherDependencies()
+        private bool GetConditionStatementDependencies()
         {
             bool foundDependency = false;
             if (_textLower.Contains("permission of"))
@@ -61,40 +65,16 @@ namespace WebCrawler
                 foundDependency = true;
             }
 
-            return foundDependency;
-        }
-
-        private bool GetAbsoluteDependencies()
-        {
-            bool foundDependency = false;
-            int absoluteCheck = _textLower.IndexOf("and");
-            if (absoluteCheck > 0)
+            if (foundDependency)
             {
-                // CORS A and CORS B
-                _logMessage("Course A and Course B");
-
-                string[] absCourses = CourseExtracter.ExtractCourses(_text);
-                foreach (var absCourse in absCourses)
-                {
-                    _absolutePreRe.courseIds.Add(absCourse);
-                }
-
-                foundDependency = true;
-            }
-
-            MatchCollection absoluteMatches = CourseExtracter.CoursePattern.Matches(_text);
-            if (absoluteMatches.Count == 1)
-            {
-                // Single Course
-                _logMessage("Only One Course");
-
-                _absolutePreRe.courseIds.Add(CourseExtracter.ExtractCourses(_text)[0]);
-                foundDependency = true;
+                _dependencies.Add(
+                    new DependencyAbsoluteText
+                    { ConditionStatement = _text });
             }
 
             return foundDependency;
         }
-
+        
         private bool GetOrDependencies()
         {
             bool foundDependency = false;
@@ -104,15 +84,13 @@ namespace WebCrawler
                 // CORS A or CORS B
                 _logMessage("Course A or Course B");
 
-                //string[] OneOfCourses = HandleListItem(listItem);
+                var numberOfCoursesPreReq = new DependencyNumberOfCourses
+                {
+                    courseIds = new HashSet<string>(courseList),
+                    NumberOfCourses = 1
+                };
 
-                //var numberOfCoursesPreReq = new PreReqNumberOfCourses
-                //{
-                //    courseIds = new HashSet<string>(OneOfCourses),
-                //    NumberOfCourses = 1
-                //};
-
-                //dependencies.Add(numberOfCoursesPreReq);
+                _dependencies.Add(numberOfCoursesPreReq);
                 foundDependency = true;
             }
 
@@ -127,24 +105,55 @@ namespace WebCrawler
                 // N units of subset of courses
                 _logMessage("N units of a list of courses");
 
-                var numberOfUnitsPreReq = new DependencyNumberOfUnits()
-                {
-                    // TODO Fix
-                    // courseIds = new HashSet<string>(HandleListItem(listItem))
-                };
-
-                this._dependencies.Add(numberOfUnitsPreReq);
+                AppendToDependencyList(new DependencyNumberOfUnits());
                 foundDependency = true;
             }
             else if (_textLower.IndexOf("of") > -1)
             {
                 // N courses of subset of courses
                 _logMessage("N courses of a list of courses");
+                AppendToDependencyList(new DependencyNumberOfCourses());
                 foundDependency = true;
             }
 
             return foundDependency;
         }
 
+        private bool GetAbsoluteDependencies()
+        {
+            bool foundDependency = false;
+            int absoluteCheck = _textLower.IndexOf("and");
+
+            if (absoluteCheck > 0)
+            {
+                // CORS A and CORS B
+                _logMessage("Course A and Course B");
+
+                AppendToDependencyList(new DependencyAbsolute());
+
+                foundDependency = true;
+            }
+
+            if (courseList.Length == 1)
+            {
+                // Single Course
+                _logMessage("Only One Course");
+
+                AppendToDependencyList(new DependencyAbsolute());
+                foundDependency = true;
+            }
+            
+            return foundDependency;
+        }
+
+        private void AppendToDependencyList(DependencyWithIds dependency)
+        {
+            foreach (var absCourse in courseList)
+            {
+                dependency.courseIds.Add(absCourse);
+            }
+
+            _dependencies.Add(dependency);
+        }
     }
 }

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UvicCourseCalendar.Infrastructure.DataModel;
 
 namespace WebCrawler
@@ -16,10 +15,9 @@ namespace WebCrawler
 
     public class CourseExtracter
     {
-        const string rootUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
-        const string slash = "/";
-        const string urlEnd = ".html";
-        public static Regex CoursePattern = new Regex("[A-Z]{2,4} \\d{3}");
+        private const string rootUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
+        private const string middleUrl = "/";
+        private const string urlEnd = ".html";
 
         private string _fieldOfStudy;
         private string _courseNum;
@@ -38,7 +36,7 @@ namespace WebCrawler
             // Get Webpage
             // TODO Try Catch
             HtmlWeb web = new HtmlWeb();
-            string requestUrl = rootUrl + fieldOfStudy + slash + courseNum + urlEnd;
+            string requestUrl = rootUrl + fieldOfStudy + middleUrl + courseNum + urlEnd;
             this.content = web.Load(requestUrl); 
         }
 
@@ -61,7 +59,6 @@ namespace WebCrawler
             string filter = "//ul[@class='" + filterClass + "']//li";
             
             HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
-            var absolutePreReq = new DependencyAbsolute();
 
             // Check if Dependencies Exist
             if (coursesHtml == null)
@@ -73,11 +70,10 @@ namespace WebCrawler
             foreach (HtmlNode listItem in coursesHtml)
             {
                 string rawText = PrepareForProcessing(listItem.InnerHtml);
-                string rawTextLower = rawText.ToLowerInvariant();
                 Action<string> logCallBack = LogMessage;
 
-                DependencyParser dependencyParser = new DependencyParser(rawText, rawTextLower, absolutePreReq, logCallBack);
-                var foundDependencies = dependencyParser.GetDependencies();
+                DependencyParser dependencyParser = new DependencyParser(rawText, logCallBack);
+                List<Dependency> foundDependencies = dependencyParser.GetDependencies();
                 if (foundDependencies.Count > 0)
                 {
                     _dependencies.AddRange(foundDependencies);
@@ -87,18 +83,12 @@ namespace WebCrawler
                     this.LogError("Unhandled List Dependency:\n" + listItem.InnerHtml);
                 }
             }
-
-            if (absolutePreReq?.courseIds?.Count > 0)
-            {
-                this._dependencies.Add(absolutePreReq);
-            }
-
+                        
             List<Dependency> list = _dependencies;
             this._dependencies = null;
             return list;
         }
-
-        
+   
         /* GENERAL PROCESSING HELPER METHODS */
         private string PrepareForProcessing(string str)
         {
@@ -133,22 +123,7 @@ namespace WebCrawler
         private void LogExeception(Exception ex)
         {
             this.LogError(ex.Message);
-        }
-
-        /* STATIC HELPER METHODS */
-        public  static string[] ExtractCourses(string text)
-        {
-            // Regex [A-Z]{2,4} \d{3}
-            MatchCollection matchCourses = CoursePattern.Matches(text);
-            string[] courses = new string[matchCourses.Count];
-
-            for(int i = 0; i < matchCourses.Count; i++)
-            {
-                courses[i] = matchCourses[i].ToString();
-            }
-
-            return courses;
-        }
+        }        
 
         // https://stackoverflow.com/questions/12787449/html-agility-pack-removing-unwanted-tags-without-removing-content
         private static string RemoveHtmlTags(string data)
