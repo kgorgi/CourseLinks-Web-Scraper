@@ -18,16 +18,16 @@ namespace CourseInfoCollector
                 CourseCode = "255",
                 FieldOfStudy = "Math",
                 MarkUp = "HTML CONTENT HERE",
-                PreReqs = new List<PreReq>
+                PreReqs = new List<Dependency>
                 {
-                    new PreReqAbsolute
+                    new DependencyAbsolute
                     {
                          courseIds = new HashSet<string>
                          {
                              "ENG210"
                          }
                     },
-                    new PreReqNumberOfCourses(1)
+                    new DependencyNumberOfCourses(1)
                     {                        
                          courseIds = new HashSet<string>
                          {
@@ -36,9 +36,9 @@ namespace CourseInfoCollector
                          }
                     }
                 },
-                CoReqs = new List<PreReq>
+                CoReqs = new List<Dependency>
                 {
-                    new PreReqAbsolute
+                    new DependencyAbsolute
                     {
                          courseIds = new HashSet<string>
                          {

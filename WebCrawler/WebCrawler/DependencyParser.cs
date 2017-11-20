@@ -10,19 +10,19 @@ namespace WebCrawler
         private string _text;
         private string _textLower;
         private Action<string> _logMessage;
-        private PreReqAbsolute _absolutePreRe;
-        private List<PreReq> _dependencies;
+        private DependencyAbsolute _absolutePreRe;
+        private List<Dependency> _dependencies;
 
-        public DependencyParser(string text, string lowerText, PreReqAbsolute absDependency, Action<string> logMethodCallBack)
+        public DependencyParser(string text, string lowerText, DependencyAbsolute absDependency, Action<string> logMethodCallBack)
         {
             _text = text;
             _textLower = lowerText;
             _absolutePreRe = absDependency;
             this._logMessage = logMethodCallBack;
-            _dependencies = new List<PreReq>();
+            _dependencies = new List<Dependency>();
         }
 
-        public List<PreReq> GetDependencies()
+        public List<Dependency> GetDependencies()
         {
             this.GetOtherDependencies();
             this.GetOfDependencies();
@@ -127,7 +127,7 @@ namespace WebCrawler
                 // N units of subset of courses
                 _logMessage("N units of a list of courses");
 
-                var numberOfUnitsPreReq = new PreReqNumberOfUnits()
+                var numberOfUnitsPreReq = new DependencyNumberOfUnits()
                 {
                     // TODO Fix
                     // courseIds = new HashSet<string>(HandleListItem(listItem))

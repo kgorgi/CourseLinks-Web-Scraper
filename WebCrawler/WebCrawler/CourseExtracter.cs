@@ -27,7 +27,7 @@ namespace WebCrawler
 
         private HtmlDocument content;
 
-        private List<PreReq> _dependencies;
+        private List<Dependency> _dependencies;
 
         public CourseExtracter(string fieldOfStudy, string courseNum)
         {
@@ -42,9 +42,9 @@ namespace WebCrawler
             this.content = web.Load(requestUrl); 
         }
 
-        public List<PreReq> ProcessCourse(DependencyType type)
+        public List<Dependency> ProcessCourse(DependencyType type)
         {
-            this._dependencies = new List<PreReq>();
+            this._dependencies = new List<Dependency>();
             this.LogMessage(type.ToString());
             // Determine HTML Class
             string filterClass = "prereq";
@@ -61,7 +61,7 @@ namespace WebCrawler
             string filter = "//ul[@class='" + filterClass + "']//li";
             
             HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
-            var absolutePreReq = new PreReqAbsolute();
+            var absolutePreReq = new DependencyAbsolute();
 
             // Check if Dependencies Exist
             if (coursesHtml == null)
@@ -93,7 +93,7 @@ namespace WebCrawler
                 this._dependencies.Add(absolutePreReq);
             }
 
-            List<PreReq> list = _dependencies;
+            List<Dependency> list = _dependencies;
             this._dependencies = null;
             return list;
         }
