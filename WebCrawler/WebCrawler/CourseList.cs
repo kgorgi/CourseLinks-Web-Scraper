@@ -12,7 +12,7 @@ namespace WebCrawler
         private const string _coursesUrlStart = "https://web.uvic.ca/calendar2017-09/CDs/";
         private const string _coursesUrlEnd = "/CTs.html";
 
-        private HtmlWeb _htmlParser = new HtmlWeb();
+        private static HtmlWeb _htmlParser = new HtmlWeb();
 
         public static string FieldOfStudyUrl 
         {

@@ -1,15 +1,16 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using UvicCourseCalendar.Infrastructure.CourseNodeRepo;
 using UvicCourseCalendar.Infrastructure.DataModel;
 
 namespace CourseInfoCollector
 {
     [TestClass]
-    public class CourseNodeTests
+    public class CourseRepoTests
     {
         [TestMethod]
-        public void CourseNodeValid_Serialize_Done()
+        public void CourseRepoWithOneCourse_Save_FileSaved()
         {
             // ----- Setup Environment -----
 
@@ -48,15 +49,11 @@ namespace CourseInfoCollector
                 }
             };
 
-            // ----- Action -----
+            CourseNodeRepo courseRepo = new CourseNodeRepo();
 
-            var jsonSting = JsonConvert.SerializeObject(courseNode);
-
-            string expectedJson = "{\"CourseCode\":\"255\",\"FieldOfStudy\":\"Math\",\"MarkUp\":\"HTML CONTENT HERE\",\"PreReqs\":[{\"courseIds\":[\"ENG210\"],\"UserFriendlyCondition\":\"Absolute\"},{\"NumberOfCourses\":1,\"courseIds\":[\"ENG150\",\"MATH160\"],\"UserFriendlyCondition\":\"Courses\"}],\"CoReqs\":[{\"courseIds\":[\"SENG321\"],\"UserFriendlyCondition\":\"Absolute\"}],\"PreOrCoReqs\":null}";
-
-            // ----- Expected Result -----
-
-            Assert.AreEqual(expectedJson, jsonSting);
+            courseRepo.AddCourse(courseNode);
+            courseRepo.Save();
+            courseRepo.Reload();
         }
         
     }
