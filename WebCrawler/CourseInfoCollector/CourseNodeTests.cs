@@ -18,46 +18,30 @@ namespace CourseInfoCollector
                 CourseCode = "255",
                 FieldOfStudy = "Math",
                 MarkUp = "HTML CONTENT HERE",
-                PreReqs = new List<Dependency>
+                PreReqs = new HashSet<string>
                 {
-                    new DependencyAbsolute
-                    {
-                         courseIds = new HashSet<string>
-                         {
-                             "ENG210"
-                         }
-                    },
-                    new DependencyNumberOfCourses(1)
-                    {                        
-                         courseIds = new HashSet<string>
-                         {
-                             "ENG150",
-                             "MATH160"
-                         }
-                    }
+                    "ENG210"
                 },
-                CoReqs = new List<Dependency>
+                PreOrCoReqs = new HashSet<string>
                 {
-                    new DependencyAbsolute
-                    {
-                         courseIds = new HashSet<string>
-                         {
-                             "SENG321"
-                         }
-                    }
+                    "ENG150",
+                    "MATH160"
+                },
+                CoReqs = new HashSet<string>
+                {
+                    "SENG321"
                 }
             };
 
             // ----- Action -----
 
             var jsonSting = JsonConvert.SerializeObject(courseNode);
-
-            string expectedJson = "{\"CourseCode\":\"255\",\"FieldOfStudy\":\"Math\",\"MarkUp\":\"HTML CONTENT HERE\",\"PreReqs\":[{\"courseIds\":[\"ENG210\"],\"UserFriendlyCondition\":\"Absolute\"},{\"NumberOfCourses\":1,\"courseIds\":[\"ENG150\",\"MATH160\"],\"UserFriendlyCondition\":\"Courses\"}],\"CoReqs\":[{\"courseIds\":[\"SENG321\"],\"UserFriendlyCondition\":\"Absolute\"}],\"PreOrCoReqs\":null}";
+            string expectedJson = "{\"CourseCode\":\"255\",\"FieldOfStudy\":\"Math\",\"PreReqs\":[\"ENG210\"],\"CoReqs\":[\"SENG321\"],\"PreOrCoReqs\":[\"ENG150\",\"MATH160\"]}";
 
             // ----- Expected Result -----
 
             Assert.AreEqual(expectedJson, jsonSting);
         }
-        
+
     }
 }

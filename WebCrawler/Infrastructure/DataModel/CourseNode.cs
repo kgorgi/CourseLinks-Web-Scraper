@@ -23,13 +23,13 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         public string MarkUp { get; set; }
 
         [JsonProperty]
-        public List<Dependency> PreReqs { get; set; }
+        public ISet<string> PreReqs { get; set; }
 
         [JsonProperty]
-        public List<Dependency> CoReqs { get; set; }
+        public ISet<string> CoReqs { get; set; }
 
         [JsonProperty]
-        public List<Dependency> PreOrCoReqs { get; set; }
+        public ISet<string> PreOrCoReqs { get; set; }
 
         #endregion Properties
 
@@ -37,7 +37,9 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
 
         public CourseNode()
         {
-
+            PreReqs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            CoReqs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            PreOrCoReqs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
         #endregion Constructors
@@ -82,126 +84,43 @@ namespace UvicCourseCalendar.Infrastructure.DataModel
         }
 
         #endregion Equality
-    }
 
-    public enum DependencyCondition
-    {
-        // Number of courses required from a list of courses
-        [Description("Courses")]
-        Courses,
+        #region Utility Functions
 
-        // Number of units requires from a list of courses
-        [Description("Credits")]
-        Credits,
-
-        // All courses required in a list
-        [Description("Absolute")]
-        Absolute,
-
-        // Grade required for each course in a list
-        [Description("Grade")]
-        Grade,
-
-        [Description("Must satisfy this statement")]
-        Statement,
-
-        // Collection of various Pre-Reqs. Any one of the collections must be satisfied.
-        [Description("Must satisfy one of the sections")]
-        Or
-    }
-
-    public abstract class Dependency
-    {
-        [JsonIgnore]
-        public abstract DependencyCondition condition { get; }
-
-        [JsonProperty]
-        public string UserFriendlyCondition => condition.GetDescription();
-    }
-
-    public abstract class DependencyWithIds : Dependency
-    {
-        private ISet<string> _courseIds;
-
-        [JsonProperty]
-        public ISet<string> courseIds
+        public void PrintCourse()
         {
-            get
-            {
-                if (_courseIds == null)
-                {
-                    _courseIds = new HashSet<string>();
-                }
-
-                return _courseIds;
-            }
-            set
-            {
-                _courseIds = value;
-            }
-        }
-    }
-
-    public sealed class DependencyAbsoluteText : Dependency
-    {
-        public override DependencyCondition condition => DependencyCondition.Statement;
-    }
-
-    public sealed class DependencyAbsolute : DependencyWithIds
-    {
-        public override DependencyCondition condition => DependencyCondition.Absolute;
-    }
-
-    public sealed class DependencyNumberOfUnits : DependencyWithIds
-    {
-        [JsonProperty]
-        public float Units { get; set; }
-
-        public override DependencyCondition condition => DependencyCondition.Credits;
-
-        public DependencyNumberOfUnits()
-        {
-            Units = 0f;
+            PrintCourse(this);
         }
 
-        public DependencyNumberOfUnits(float units)
+        public  static void PrintCourse(CourseNode course)
         {
-            if (units < 1)
+            Console.WriteLine("-------------------------------------------------------------------------------");
+            Console.WriteLine("Printing Details for " + course.CourseId);
+
+            Console.Write("\nPreReqs:");
+
+            foreach (var courseId in course.PreReqs)
             {
-                throw new InvalidDataException("Units cannot be zero or negative.");
+                Console.Write(courseId + " ");
             }
 
-            this.Units = units;
-        }
-    }
+            Console.Write("\nCoReqs:");
 
-    public sealed class DependencyNumberOfCourses : DependencyWithIds
-    {
-        [JsonProperty]
-        public int NumberOfCourses { get; set; }
-
-        public override DependencyCondition condition => DependencyCondition.Courses;
-
-        public DependencyNumberOfCourses()
-        {
-            this.NumberOfCourses = 1;
-        }
-
-        public DependencyNumberOfCourses(int nCourses)
-        {
-            if (nCourses < 1)
+            foreach (var courseId in course.CoReqs)
             {
-                throw new InvalidDataException("Number of courses cannot be zero or negative.");
+                Console.Write(courseId + " ");
             }
 
-            this.NumberOfCourses = nCourses;
+            Console.Write("\nPreReqs OR CoReqs:");
+
+            foreach (var courseId in course.PreOrCoReqs)
+            {
+                Console.Write(courseId + " ");
+            }
+
+            Console.WriteLine();
         }
-    }
 
-    public sealed class DependencyWithOrCourses : Dependency
-    {
-        public override DependencyCondition condition => DependencyCondition.Or;
-
-        public List<List<Dependency>> sections;
+        #endregion Utility Functions
     }
 }

@@ -19,42 +19,26 @@ namespace CourseInfoCollector
                 CourseCode = "255",
                 FieldOfStudy = "Math",
                 MarkUp = "HTML CONTENT HERE",
-                PreReqs = new List<Dependency>
+                PreReqs = new HashSet<string>
                 {
-                    new DependencyAbsolute
-                    {
-                         courseIds = new HashSet<string>
-                         {
-                             "ENG210"
-                         }
-                    },
-                    new DependencyNumberOfCourses(1)
-                    {                        
-                         courseIds = new HashSet<string>
-                         {
-                             "ENG150",
-                             "MATH160"
-                         }
-                    }
+                    "ENG210"
                 },
-                CoReqs = new List<Dependency>
+                PreOrCoReqs = new HashSet<string>
                 {
-                    new DependencyAbsolute
-                    {
-                         courseIds = new HashSet<string>
-                         {
-                             "SENG321"
-                         }
-                    }
+                    "ENG150",
+                    "MATH160"
+                },
+                CoReqs = new HashSet<string>
+                {
+                    "SENG321"
                 }
             };
 
             CourseNodeRepo courseRepo = new CourseNodeRepo();
 
             courseRepo.AddCourse(courseNode);
-            courseRepo.Save();
+            courseRepo.SaveCoursesToDisk();
             courseRepo.Reload();
         }
-        
     }
 }

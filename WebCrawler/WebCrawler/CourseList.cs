@@ -1,13 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
+using System;
+using System.Collections.Generic;
 
 namespace WebCrawler
 {
     class CourseList
     {
-        private static string _fieldsOfStudyIndexUrl = "https://web.uvic.ca/calendar2017-09/courses/index.html";
+        private static string _fieldsOfStudyIndexUrl = "https://web.uvic.ca/calendar2018-01/courses/index.html";
         public static string FieldOfStudyUrl 
         {
             get
@@ -16,7 +15,7 @@ namespace WebCrawler
             }
         }
 
-        private static string _startUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
+        private static string _startUrl = "https://web.uvic.ca/calendar2018-01/CDs/";
         private static string _endUrl = "/CTs.html";
 
         private static string GetCourseListUrl(string fieldOfStudy)
@@ -35,9 +34,18 @@ namespace WebCrawler
 
             List<string> listOfFields = new List<string>();
 
-            for (int i = 0; i < fieldsOfStudyHtmlCollection.Count/2; i+=2)
+            bool skip = false;
+            for (int i = 0; i < fieldsOfStudyHtmlCollection.Count; i++)
             {
+                if(skip)
+                {
+                    skip = false;
+
+                    continue;
+                }
+
                 listOfFields.Add(fieldsOfStudyHtmlCollection[i].InnerHtml);
+                skip = true;
             }
 
             return listOfFields;
@@ -65,6 +73,7 @@ namespace WebCrawler
 
         public static List<string> GetAllUniversityCourses()
         {
+            Console.WriteLine("Start downloading courses list from " + _fieldsOfStudyIndexUrl);
             List<string> allPossibleCourses = new List<string>();
 
             List<string> fieldsOfStudy = GetFieldOfStudyList();
@@ -73,6 +82,8 @@ namespace WebCrawler
             {
                 GetAllCoursesForFieldOfStudy(fieldsOfStudy[i], allPossibleCourses);
             }
+
+            Console.WriteLine("End downloading courses list from " + _fieldsOfStudyIndexUrl);
 
             return allPossibleCourses;
         }

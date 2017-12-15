@@ -16,7 +16,8 @@ namespace WebCrawler
 
     public class CourseExtracter
     {
-        const string rootUrl = "https://web.uvic.ca/calendar2017-09/CDs/";
+        const string rootUrl = "https://web.uvic.ca/calendar2018-01/";
+        private string coursesUrls => rootUrl + "CDs/";
         const string slash = "/";
         const string urlEnd = ".html";
         public static Regex CoursePattern = new Regex("[A-Z]{2,4} \\d{3}");
@@ -26,8 +27,7 @@ namespace WebCrawler
         private string _courseId;
 
         private HtmlDocument content;
-
-        private List<Dependency> _dependencies;
+        private string htmlContent;
 
         public CourseExtracter(string fieldOfStudy, string courseNum)
         {
@@ -38,67 +38,71 @@ namespace WebCrawler
             // Get Webpage
             // TODO Try Catch
             HtmlWeb web = new HtmlWeb();
-            string requestUrl = rootUrl + fieldOfStudy + slash + courseNum + urlEnd;
-            this.content = web.Load(requestUrl); 
+            string requestUrl = coursesUrls + fieldOfStudy + slash + courseNum + urlEnd;
+            this.content = web.Load(requestUrl);
+
         }
 
-        public List<Dependency> ProcessCourse(DependencyType type)
+        public string GetHtmlContent()
         {
-            this._dependencies = new List<Dependency>();
-            this.LogMessage(type.ToString());
+            string filter = "//section[@id='content']";
+
+            HtmlNode htmlNode = this.content.DocumentNode.SelectNodes(filter).FirstOrDefault();
+            foreach (var a in htmlNode.Descendants("a"))
+            {
+                // Resolve courses links
+                if (CoursePattern.Matches(a.InnerHtml).Count == 1)
+                {
+                    string existing = a.Attributes["href"].Value.Replace("../", "");
+                    a.Attributes["href"].Value = coursesUrls + existing;
+                }
+            }           
+           
+            return htmlNode.InnerHtml;
+        }
+
+        public ISet<string> ProcessCourse(DependencyType type)
+        {
+            ISet<string> relatedCourses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // this.LogMessage(type.ToString());
             // Determine HTML Class
             string filterClass = "prereq";
 
             if (type == DependencyType.Coreq)
             {
                 filterClass = "coreq";
-            } else if (type == DependencyType.Precoreq)
+            }
+            else if (type == DependencyType.Precoreq)
             {
                 filterClass = "precoreq";
             }
 
             // Filter Based on Class
             string filter = "//ul[@class='" + filterClass + "']//li";
-            
+
             HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
-            var absolutePreReq = new DependencyAbsolute();
 
             // Check if Dependencies Exist
             if (coursesHtml == null)
             {
-                return null;
+                return relatedCourses;
             }
 
             //Process Dependencies
-            foreach (HtmlNode listItem in coursesHtml)
+            foreach (HtmlNode htmlNode in coursesHtml)
             {
-                string rawText = PrepareForProcessing(listItem.InnerHtml);
-                string rawTextLower = rawText.ToLowerInvariant();
-                Action<string> logCallBack = LogMessage;
-
-                DependencyParser dependencyParser = new DependencyParser(rawText, rawTextLower, absolutePreReq, logCallBack);
-                var foundDependencies = dependencyParser.GetDependencies();
-                if (foundDependencies.Count > 0)
+                var coursesFound = CourseExtracter.ExtractCourses(htmlNode);
+                foreach (var courseFound in coursesFound)
                 {
-                    _dependencies.AddRange(foundDependencies);
-                }
-                else
-                {
-                    this.LogError("Unhandled List Dependency:\n" + listItem.InnerHtml);
+                    relatedCourses.Add(courseFound);
                 }
             }
 
-            if (absolutePreReq?.courseIds?.Count > 0)
-            {
-                this._dependencies.Add(absolutePreReq);
-            }
-
-            List<Dependency> list = _dependencies;
-            this._dependencies = null;
-            return list;
+            return relatedCourses;
         }
 
-        
+
         /* GENERAL PROCESSING HELPER METHODS */
         private string PrepareForProcessing(string str)
         {
@@ -114,7 +118,7 @@ namespace WebCrawler
 
             return noTags;
         }
-        
+
         /* LOGGING */
         private void LogMessage(string message)
         {
@@ -136,18 +140,29 @@ namespace WebCrawler
         }
 
         /* STATIC HELPER METHODS */
-        public  static string[] ExtractCourses(string text)
+        public static ISet<string> ExtractCourses(HtmlNode htmlNode)
         {
-            // Regex [A-Z]{2,4} \d{3}
-            MatchCollection matchCourses = CoursePattern.Matches(text);
-            string[] courses = new string[matchCourses.Count];
+            var coursesFound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            for(int i = 0; i < matchCourses.Count; i++)
+            HtmlNodeCollection links = htmlNode.SelectNodes("a[@href]");
+
+            if (links == null)
             {
-                courses[i] = matchCourses[i].ToString();
+                return coursesFound;
             }
 
-            return courses;
+            foreach (var item in links)
+            {
+                string courseName = item.InnerHtml;
+
+                // Regex [A-Z]{2,4} \d{3}
+                if (CoursePattern.Matches(courseName).Count == 1)
+                {
+                    coursesFound.Add(courseName);
+                }
+            }
+
+            return coursesFound;
         }
 
         // https://stackoverflow.com/questions/12787449/html-agility-pack-removing-unwanted-tags-without-removing-content
@@ -175,7 +190,7 @@ namespace WebCrawler
                         foreach (var child in childNodes)
                         {
                             nodes.Enqueue(child);
-                            parentNode.InsertBefore(child, node);  
+                            parentNode.InsertBefore(child, node);
                         }
                     }
 
