@@ -34,7 +34,7 @@ namespace CourseInfoCollector
                 }
             };
 
-            CourseNodeRepo courseRepo = new CourseNodeRepo();
+            CourseNodeRepo courseRepo = new CourseNodeRepo("Test Calendar");
 
             courseRepo.AddCourse(courseNode);
             courseRepo.SaveCoursesToDisk();

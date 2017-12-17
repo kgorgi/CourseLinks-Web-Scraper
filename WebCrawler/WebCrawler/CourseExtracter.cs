@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using UvicCourseCalendar.Infrastructure.DataModel;
+using UvicCourseCalendar.Infrastructure;
 
 namespace WebCrawler
 {
@@ -16,46 +16,58 @@ namespace WebCrawler
 
     public class CourseExtracter
     {
-        const string rootUrl = "https://web.uvic.ca/calendar2018-01/";
-        private string coursesUrls => rootUrl + "CDs/";
-        const string slash = "/";
-        const string urlEnd = ".html";
-        public static Regex CoursePattern = new Regex("[A-Z]{2,4} \\d{3}");
-
+        private string _calendarName;
         private string _fieldOfStudy;
         private string _courseNum;
-        private string _courseId;
+        private HtmlDocument _content;
+        private static Regex CoursePattern = new Regex("[A-Z]{2,4} \\d{3}");
+        
+        private string coursesUrls => Constants.UvicRootUrl + "/" + _calendarName + "/CDs/";
 
-        private HtmlDocument content;
-        private string htmlContent;
+        private string  requestUrl => coursesUrls + _fieldOfStudy + "/" + _courseNum + ".html";        
 
-        public CourseExtracter(string fieldOfStudy, string courseNum)
+        public CourseExtracter(string fieldOfStudy, string courseNum, string calendarName)
         {
             this._fieldOfStudy = fieldOfStudy;
             this._courseNum = courseNum;
-            this._courseId = this._fieldOfStudy + " " + this._courseNum;
+            this._calendarName = calendarName;
 
             // Get Webpage
-            // TODO Try Catch
             HtmlWeb web = new HtmlWeb();
-            string requestUrl = coursesUrls + fieldOfStudy + slash + courseNum + urlEnd;
-            this.content = web.Load(requestUrl);
-
+            this._content = web.Load(requestUrl);
         }
 
         public string GetHtmlContent()
         {
-            string filter = "//section[@id='content']";
+            string filter = "//section[@id='content']";        
+            HtmlNode htmlNode = this._content.DocumentNode.SelectNodes(filter).FirstOrDefault();
 
-            HtmlNode htmlNode = this.content.DocumentNode.SelectNodes(filter).FirstOrDefault();
             foreach (var a in htmlNode.Descendants("a"))
             {
-                // Resolve courses links
-                if (CoursePattern.Matches(a.InnerHtml).Count == 1)
+                var absPathParts = requestUrl.Split('/').ToList();
+                absPathParts.Remove(absPathParts.Last()); // Need to remove html page
+
+                string relPath = a.Attributes["href"].Value;
+                string finalPath = relPath;
+                if (relPath.StartsWith("../"))
                 {
-                    string existing = a.Attributes["href"].Value.Replace("../", "");
-                    a.Attributes["href"].Value = coursesUrls + existing;
+                    var relPathParts = relPath.Split('/');
+
+                    for (int relPos = 0; relPos < relPathParts.Length; relPos++)
+                    {
+                        if (relPathParts[relPos].Contains(".."))
+                        {
+                            absPathParts.Remove(absPathParts.Last());
+                            continue;
+                        }
+
+                        absPathParts.Add(relPathParts[relPos]);
+                    }
+
+                    finalPath = string.Join("/", absPathParts);
                 }
+
+                a.Attributes["href"].Value = finalPath;
             }           
            
             return htmlNode.InnerHtml;
@@ -64,8 +76,7 @@ namespace WebCrawler
         public ISet<string> ProcessCourse(DependencyType type)
         {
             ISet<string> relatedCourses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            // this.LogMessage(type.ToString());
+            
             // Determine HTML Class
             string filterClass = "prereq";
 
@@ -81,7 +92,7 @@ namespace WebCrawler
             // Filter Based on Class
             string filter = "//ul[@class='" + filterClass + "']//li";
 
-            HtmlNodeCollection coursesHtml = this.content.DocumentNode.SelectNodes(filter);
+            HtmlNodeCollection coursesHtml = this._content.DocumentNode.SelectNodes(filter);
 
             // Check if Dependencies Exist
             if (coursesHtml == null)
@@ -92,7 +103,7 @@ namespace WebCrawler
             //Process Dependencies
             foreach (HtmlNode htmlNode in coursesHtml)
             {
-                var coursesFound = CourseExtracter.ExtractCourses(htmlNode);
+                var coursesFound = ExtractCourses(htmlNode);
                 foreach (var courseFound in coursesFound)
                 {
                     relatedCourses.Add(courseFound);
@@ -101,46 +112,8 @@ namespace WebCrawler
 
             return relatedCourses;
         }
-
-
-        /* GENERAL PROCESSING HELPER METHODS */
-        private string PrepareForProcessing(string str)
-        {
-            // this.LogMessage("Preparing for Proccessing:\n" + str);
-            string noTags = RemoveHtmlTags(str);
-
-            // Remove appended ";and, ";or", etc
-            int semiColonCheck = noTags.IndexOf(";");
-            if (semiColonCheck > -1)
-            {
-                noTags = noTags.Substring(0, semiColonCheck);
-            }
-
-            return noTags;
-        }
-
-        /* LOGGING */
-        private void LogMessage(string message)
-        {
-            String timeStamp = DateTime.Now.ToLongTimeString();
-            Console.WriteLine(timeStamp + ": " + this._courseId);
-            Console.WriteLine(message);
-        }
-
-        private void LogError(string error)
-        {
-            String timeStamp = DateTime.Now.ToLongTimeString();
-            Console.WriteLine(timeStamp + ": " + this._courseId + " ERROR ");
-            Console.WriteLine(error);
-        }
-
-        private void LogExeception(Exception ex)
-        {
-            this.LogError(ex.Message);
-        }
-
-        /* STATIC HELPER METHODS */
-        public static ISet<string> ExtractCourses(HtmlNode htmlNode)
+        
+        private ISet<string> ExtractCourses(HtmlNode htmlNode)
         {
             var coursesFound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -163,42 +136,6 @@ namespace WebCrawler
             }
 
             return coursesFound;
-        }
-
-        // https://stackoverflow.com/questions/12787449/html-agility-pack-removing-unwanted-tags-without-removing-content
-        private static string RemoveHtmlTags(string data)
-        {
-            if (string.IsNullOrEmpty(data)) return string.Empty;
-
-            var document = new HtmlDocument();
-            document.LoadHtml(data);
-
-            var acceptableTags = new String[] { };
-
-            var nodes = new Queue<HtmlNode>(document.DocumentNode.SelectNodes("./*|./text()"));
-            while (nodes.Count > 0)
-            {
-                var node = nodes.Dequeue();
-                var parentNode = node.ParentNode;
-
-                if (!acceptableTags.Contains(node.Name) && node.Name != "#text")
-                {
-                    var childNodes = node.SelectNodes("./*|./text()");
-
-                    if (childNodes != null)
-                    {
-                        foreach (var child in childNodes)
-                        {
-                            nodes.Enqueue(child);
-                            parentNode.InsertBefore(child, node);
-                        }
-                    }
-
-                    parentNode.RemoveChild(node);
-                }
-            }
-
-            return document.DocumentNode.InnerHtml;
-        }
+        }        
     }
 }
