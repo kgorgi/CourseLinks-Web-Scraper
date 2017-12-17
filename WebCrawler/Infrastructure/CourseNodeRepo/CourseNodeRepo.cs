@@ -268,92 +268,49 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
                 relatedCourseIdsForCourse.ExceptWith(processedCourseIds);
             }
 
-            ISet<Relation> processedRelation = CaclulateRelationDepth(courseNode, courseRelations);
-            courseRelations.RelationsList = processedRelation;
-
-            courseRelations.CourseLevels = new HashSet<CourseLevelInfo>();
-
-            foreach (var courseId in processedCourseIds)
-            {
-                int depthLevel = 1;
-                Relation maxDepthRelation = processedRelation
-                    .Where(x => x.Destination == courseId)
-                    .OrderByDescending(x => x.Level)
-                    .FirstOrDefault();
-
-                if (maxDepthRelation != null)
-                {
-                    depthLevel = maxDepthRelation.Level;
-                }
-
-                courseRelations.CourseLevels.Add(new CourseLevelInfo { CourseId = courseId, Level = depthLevel });
-            }
-
-            int levelCount = 0;
-
-            foreach (var courseLevelInfoGrp in courseRelations.CourseLevels.OrderBy(x => x.Level).GroupBy(x => x.Level))
-            {
-                levelCount += 1;
-                if (courseLevelInfoGrp.Key == levelCount)
-                {
-                    continue;
-                }
-
-                foreach (var courseLevelInfo in courseLevelInfoGrp)
-                {
-                    courseLevelInfo.Level = levelCount;
-                }
-            }
-
-            // Add main node
-            courseRelations.CourseLevels.Add(new CourseLevelInfo { CourseId = courseNode.CourseId, Level = 0 });
+            Dictionary<string, int> courseLevels = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            CalculateNodeLevels(courseNode.CourseId, courseLevels, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            courseRelations.CourseLevelsInfo = courseLevels;
 
             return courseRelations;
         }
 
-        private ISet<Relation> CaclulateRelationDepth(CourseNode headCourse, Relations relations)
+        private void CalculateNodeLevels(string courseId, IDictionary<string, int> courseLevels, ISet<string> previousNodes, int level = 0)
         {
-            if (headCourse == null)
+            if (!_courses.TryGetValue(courseId, out CourseNode parentCourseNode))
             {
-                return new HashSet<Relation>();
+                return;
             }
 
-            ISet<Relation> processedRelation = new HashSet<Relation>();
-
-            int currentLevel = 0;
-
-            HashSet<CourseNode> remainingSourceCourses = new HashSet<CourseNode>();
-            remainingSourceCourses.Add(headCourse);
-
-            do
+            if (previousNodes.Contains(courseId))
             {
-                currentLevel += 1;
-                foreach (var sourceCourse in remainingSourceCourses.ToArray())
+                return;
+            }
+            else
+            {
+                previousNodes.Add(courseId);
+            }
+
+            if (courseLevels.ContainsKey(courseId))
+            {
+                if (courseLevels[courseId] < level)
                 {
-                    foreach (var childCourseInfo in GetChildCourses(sourceCourse))
-                    {
-                        if (_courses.TryGetValue(childCourseInfo.courseId, out CourseNode relatedCourseNode))
-                        {
-                            var relation = relations.RelationsList
-                                .Where(x => x.Source.Equals(sourceCourse.CourseId, StringComparison.OrdinalIgnoreCase) &&
-                            x.Destination.Equals(childCourseInfo.courseId, StringComparison.OrdinalIgnoreCase) &&
-                            x.Type == childCourseInfo.courseType).First();
-                            relation.Level = currentLevel;
-
-                            if (processedRelation.Add(relation))
-                            {
-                                remainingSourceCourses.Add(relatedCourseNode);
-                            }
-                        }
-                    }
-
-                    remainingSourceCourses.Remove(sourceCourse);
+                    courseLevels[courseId] = level;
                 }
-            } while (remainingSourceCourses.Any());
+            }
+            else
+            {
+                courseLevels[courseId] = level;
+            }
 
-            return processedRelation;
+            foreach (var childCourseInfo in GetChildCourses(parentCourseNode))
+            {
+                var prevList = new HashSet<string>(previousNodes.ToArray(), StringComparer.OrdinalIgnoreCase);
+
+                CalculateNodeLevels(childCourseInfo.courseId, courseLevels, prevList, level + 1);
+            }
         }
-
+       
         private IEnumerable<(string courseId, string courseType)> GetChildCourses(CourseNode courseNode)
         {
             foreach (var courseId in courseNode.PreReqs)
@@ -443,7 +400,7 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
 
             CreateDirIfNotFound(_dataRelationsInfoPath);
             var coursesListFileName = _dataRelationsInfoPath + "\\Courses.JSON";
-            var CourseList = new CourseList() { Courses = new HashSet<string>(_courses.Keys) };
+            var CourseList = new CourseList() { Courses = new HashSet<string>(_courses.Keys.Select(x => x.Replace(" ", ""))) };
             var fileContent = JsonConvert.SerializeObject(CourseList, jset);
             File.WriteAllText(coursesListFileName, fileContent);
             Console.WriteLine("End saving courses list.");
@@ -479,14 +436,9 @@ public class Relations
 {
     [JsonProperty]
     public ISet<Relation> RelationsList = new HashSet<Relation>();
-
-    [JsonIgnore]
-    public ISet<CourseLevelInfo> CourseLevels = new HashSet<CourseLevelInfo>();
-
+    
     [JsonProperty]
-    public IDictionary<string, int> CourseLevelsInfo => CourseLevels
-        .OrderBy(x => x.Level)
-        .ToDictionary(x => x.CourseId, x => x.Level, StringComparer.OrdinalIgnoreCase);
+    public IDictionary<string, int> CourseLevelsInfo { get; set; }
 }
 
 public class CourseLevelInfo : IEquatable<CourseLevelInfo>
