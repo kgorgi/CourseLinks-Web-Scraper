@@ -4,29 +4,35 @@ using System.Collections.Generic;
 
 namespace WebCrawler
 {
-    class CourseList
+    class UvicCoursesDownloader
     {
-        private static string _fieldsOfStudyIndexUrl = "https://web.uvic.ca/calendar2018-01/courses/index.html";
-        public static string FieldOfStudyUrl 
+        private const string _endUrl = "/CTs.html";
+        private string _calendarName;
+        private HtmlWeb _htmlParser;
+
+        private string _startUrl => string.Format("https://web.uvic.ca/{0}/CDs/", _calendarName);
+
+        private string _fieldsOfStudyIndexUrl => string.Format("https://web.uvic.ca/{0}/courses/index.html", _calendarName);
+
+        public UvicCoursesDownloader(string calendarName)
         {
-            get
+            if (string.IsNullOrEmpty(calendarName))
             {
-                return _fieldsOfStudyIndexUrl;
+                throw new ArgumentNullException(nameof(calendarName));
             }
+
+            _calendarName = calendarName;
+            _htmlParser = new HtmlWeb();
         }
 
-        private static string _startUrl = "https://web.uvic.ca/calendar2018-01/CDs/";
-        private static string _endUrl = "/CTs.html";
-
-        private static string GetCourseListUrl(string fieldOfStudy)
+        private string GetCourseListUrl(string fieldOfStudy)
         {
             return _startUrl + fieldOfStudy + _endUrl;
         }
-
-        private static HtmlWeb _htmlParser = new HtmlWeb();
-        public static List<string> GetFieldOfStudyList()
+        
+        public List<string> GetFieldOfStudyList()
         {
-            HtmlDocument fieldsOfStudyHtml = _htmlParser.Load(FieldOfStudyUrl);
+            HtmlDocument fieldsOfStudyHtml = _htmlParser.Load(_fieldsOfStudyIndexUrl);
 
             string filter = "//tr[@onclick]//td//a";
 
@@ -37,7 +43,7 @@ namespace WebCrawler
             bool skip = false;
             for (int i = 0; i < fieldsOfStudyHtmlCollection.Count; i++)
             {
-                if(skip)
+                if (skip)
                 {
                     skip = false;
 
@@ -51,7 +57,7 @@ namespace WebCrawler
             return listOfFields;
         }
 
-        public static List<string> GetAllCoursesForFieldOfStudy(string fieldOfStudy, List<string> appendTo = null)
+        public List<string> GetAllCoursesForFieldOfStudy(string fieldOfStudy, List<string> appendTo = null)
         {
             string coursesIndexUrl = GetCourseListUrl(fieldOfStudy);
 
@@ -63,7 +69,7 @@ namespace WebCrawler
 
             List<string> listOfCourses = appendTo != null ? appendTo : new List<string>();
 
-            for (int i = 0; i < coursesHtmlCollection.Count; i+= 2)
+            for (int i = 0; i < coursesHtmlCollection.Count; i += 2)
             {
                 listOfCourses.Add(fieldOfStudy + " " + coursesHtmlCollection[i].InnerHtml);
             }
@@ -71,14 +77,14 @@ namespace WebCrawler
             return listOfCourses;
         }
 
-        public static List<string> GetAllUniversityCourses()
+        public List<string> GetAllUniversityCourses()
         {
             Console.WriteLine("Start downloading courses list from " + _fieldsOfStudyIndexUrl);
             List<string> allPossibleCourses = new List<string>();
 
             List<string> fieldsOfStudy = GetFieldOfStudyList();
 
-            for(int i = 0; i < fieldsOfStudy.Count; i++)
+            for (int i = 0; i < fieldsOfStudy.Count; i++)
             {
                 GetAllCoursesForFieldOfStudy(fieldsOfStudy[i], allPossibleCourses);
             }

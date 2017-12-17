@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UvicCourseCalendar.Infrastructure.CourseNodeRepo;
 using UvicCourseCalendar.Infrastructure.DataModel;
 
@@ -7,40 +6,33 @@ namespace WebCrawler
 {
     public class WebCrawler
     {
+        public static string[] _calendars = { "calendar2017-09", "calendar2018-01" }; // Nice to have - Read a list from file.
+
         static void Main(string[] args)
         {
-            CourseNodeRepo repo = new CourseNodeRepo();
-            //DownloadAllCourses(repo);
-            repo.Reload();
-            //repo.PrintAllCourses();
+            foreach (var calendar in _calendars)
+            {
+                Console.WriteLine(string.Format("Start processing : {0}", calendar));
 
-            repo.PublishCoursesRelationInfo();
-            
+                CourseNodeRepo repo = new CourseNodeRepo(calendar);
+                //DownloadAllCourses(repo, calendar);
+                repo.Reload();
+                //repo.PrintAllCourses();
+
+                repo.PublishCoursesRelationInfo();
+
+                Console.WriteLine(string.Format("End processing : {0}", calendar));
+            }
+
             ReadyToExit();
-
-            //string lineRead = Console.ReadLine();
-            //while (lineRead != "EXIT")
-            //{
-            //    Console.Clear();
-            //    string[] course = lineRead.Split(' ');
-            //    var courseExtractor = new CourseExtracter(course[0], course[1]);
-            //    var prereqs = courseExtractor.ProcessCourse(DependencyType.Prereq);
-            //    var coreqs = courseExtractor.ProcessCourse(DependencyType.Coreq);
-            //    var precoreqs = courseExtractor.ProcessCourse(DependencyType.Precoreq);
-
-            //    CourseNode courseNode = new CourseNode() { FieldOfStudy = course[0], CourseCode = course[1], PreReqs = prereqs, CoReqs = coreqs, PreOrCoReqs = precoreqs };
-            //    PrintCourses(courseNode);
-
-            //    //Console.WriteLine();
-
-            //    lineRead = Console.ReadLine();
-            //}
         }
 
-        private static void DownloadAllCourses(ICourseNodeRepo repo)
+        private static void DownloadAllCourses(ICourseNodeRepo repo, string calendarName)
         {
-            var allCourses = new string[] { "CSC 320" };
-            //var allCourses = CourseList.GetAllUniversityCourses();
+            //var allCourses = new string[] { "CSC 320" };
+
+            UvicCoursesDownloader uvicCoursesDownloader = new UvicCoursesDownloader(calendarName);
+            var allCourses = uvicCoursesDownloader.GetAllUniversityCourses();
 
             foreach (var courseId in allCourses)
             {
@@ -50,7 +42,7 @@ namespace WebCrawler
                 repo.AddCourse(courseNode);
             }
 
-            repo.SaveCoursesToDisk();                
+            repo.SaveCoursesToDisk();
         }
 
         public static CourseNode DownloadCourse(string courseId)

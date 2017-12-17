@@ -33,9 +33,14 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
 
         private JsonSerializerSettings jset = new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.None };
 
-        public CourseNodeRepo(string dataPath = null)
+        public CourseNodeRepo(string calendarName)
         {
-            _dataPath = dataPath == null ? Constants.CoursesSavePath + "\\Data" : dataPath;
+            if (string.IsNullOrEmpty(calendarName))
+            {
+                throw new ArgumentNullException(nameof(calendarName));
+            }
+
+            _dataPath = Constants.CoursesSavePath + "\\Data\\" + calendarName;
             _courses = new Dictionary<string, CourseNode>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -297,7 +302,7 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
                 foreach (var courseLevelInfo in courseLevelInfoGrp)
                 {
                     courseLevelInfo.Level = levelCount;
-                }                
+                }
             }
 
             // Add main node
