@@ -266,7 +266,7 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
             ISet<Relation> processedRelation = CaclulateRelationDepth(courseNode, courseRelations);
             courseRelations.RelationsList = processedRelation;
 
-            courseRelations.CourseLevelsInfo = new HashSet<CourseLevelInfo>();
+            courseRelations.CourseLevels = new HashSet<CourseLevelInfo>();
 
             foreach (var courseId in processedCourseIds)
             {
@@ -281,13 +281,14 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
                     depthLevel = maxDepthRelation.Level;
                 }
 
-                courseRelations.CourseLevelsInfo.Add(new CourseLevelInfo { CourseId = courseId, Level = depthLevel });
+                courseRelations.CourseLevels.Add(new CourseLevelInfo { CourseId = courseId, Level = depthLevel });
             }
 
-            int levelCount = 1;
+            int levelCount = 0;
 
-            foreach (var courseLevelInfoGrp in courseRelations.CourseLevelsInfo.OrderBy(x => x.Level).GroupBy(x => x.Level))
+            foreach (var courseLevelInfoGrp in courseRelations.CourseLevels.OrderBy(x => x.Level).GroupBy(x => x.Level))
             {
+                levelCount += 1;
                 if (courseLevelInfoGrp.Key == levelCount)
                 {
                     continue;
@@ -296,10 +297,11 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
                 foreach (var courseLevelInfo in courseLevelInfoGrp)
                 {
                     courseLevelInfo.Level = levelCount;
-                }
-
-                levelCount += 1;
+                }                
             }
+
+            // Add main node
+            courseRelations.CourseLevels.Add(new CourseLevelInfo { CourseId = courseNode.CourseId, Level = 0 });
 
             return courseRelations;
         }
@@ -320,10 +322,9 @@ namespace UvicCourseCalendar.Infrastructure.CourseNodeRepo
 
             do
             {
+                currentLevel += 1;
                 foreach (var sourceCourse in remainingSourceCourses.ToArray())
                 {
-                    currentLevel += 1;
-
                     foreach (var childCourseInfo in GetChildCourses(sourceCourse))
                     {
                         if (_courses.TryGetValue(childCourseInfo.courseId, out CourseNode relatedCourseNode))
@@ -474,8 +475,13 @@ public class Relations
     [JsonProperty]
     public ISet<Relation> RelationsList = new HashSet<Relation>();
 
+    [JsonIgnore]
+    public ISet<CourseLevelInfo> CourseLevels = new HashSet<CourseLevelInfo>();
+
     [JsonProperty]
-    public ISet<CourseLevelInfo> CourseLevelsInfo = new HashSet<CourseLevelInfo>();
+    public IDictionary<string, int> CourseLevelsInfo => CourseLevels
+        .OrderBy(x => x.Level)
+        .ToDictionary(x => x.CourseId, x => x.Level, StringComparer.OrdinalIgnoreCase);
 }
 
 public class CourseLevelInfo : IEquatable<CourseLevelInfo>
