@@ -9,4 +9,4 @@ The web scraper iterates and downloads all the relevant course information from 
 This project was built using C# and the .NET Framework. 
 
 ## Website 
-The corresponding website used to display course information gathered by the web scraper is available here: [CourseLinks UI](https://github.com/kgorgi/CourseLinks-UI). A demo is also available in this GitHub repository. 
+The corresponding website used to display course information gathered by the web scraper is available here: [CourseLinks UI](https://github.com/kgorgi/CourseLinks-UI). A UI demo is also available in the linked GitHub repository. 
